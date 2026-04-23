@@ -166,6 +166,11 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
         <div class="role-card" onclick="pickMarshal(4)"><div class="icon">🚦</div><div class="name">Teisėjas 4</div><div class="desc">GR2 Startas</div></div>
         <div class="role-card" onclick="pickMarshal(5)"><div class="icon">🏁</div><div class="name">Teisėjas 5</div><div class="desc">GR2 Finišas</div></div>
         <div class="role-card" onclick="pickMarshal(6)"><div class="icon">📸</div><div class="name">Teisėjas 6</div><div class="desc">GR2 CP taškai</div></div>
+        <div class="role-card full" onclick="pickMarshal(7)" style="border-color:var(--accent2);">
+          <div class="icon">🏠</div>
+          <div class="name">Maršruto pabaiga</div>
+          <div class="desc">Fiksuoti grįžimą į bazę · Užbaigti renginį</div>
+        </div>
       </div>
     </div>
   </div>
@@ -202,6 +207,10 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
           <input type="number" id="cfg-cp2" placeholder="10" min="1" max="99" inputmode="numeric"></div>
       </div>
       <button class="btn btn-primary" onclick="saveConfig()">💾 Išsaugoti nustatymus</button>
+      <hr class="divider">
+      <div class="section-title">Renginio būsena</div>
+      <div id="admin-event-status" style="margin-bottom:10px;"></div>
+      <button class="btn btn-ghost" id="reopen-event-btn" onclick="reopenEvent()" style="display:none;border-color:var(--yellow);color:var(--yellow);">🔓 Atidaryti renginį iš naujo</button>
       <hr class="divider">
       <div class="section-title" style="color:var(--red)">⚠️ Pavojinga zona</div>
       <button class="btn btn-ghost" id="reset-btn" onclick="startReset()" style="border-color:var(--red);color:var(--red);">🗑️ Pradėti naujas lenktynes (ištrinti viską)</button>
@@ -317,6 +326,43 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   </div>
 </div>
 
+<!-- MODAL: FINISH EVENT (multi-step) -->
+<div class="modal-overlay" id="modal-finish-event">
+  <div class="modal">
+    <div class="modal-title" style="color:var(--accent);">🏁 Užbaigti renginį?</div>
+    <div id="finish-step1">
+      <div style="color:var(--muted);margin-bottom:16px;line-height:1.6;font-size:14px;">
+        Šis veiksmas užfiksuos lenktynių pabaigą:<br>
+        • Visi dalyviai, kurie negrįžo į bazę, taps <strong style="color:var(--red)">DNF</strong><br>
+        • Rezultatų lentelė bus užbaigta<br>
+        • Administratorius vis dar galės redaguoti duomenis
+      </div>
+      <div id="finish-summary" style="background:var(--surface2);padding:10px;border-radius:6px;margin-bottom:14px;font-size:13px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeModal('modal-finish-event')">Atšaukti</button>
+        <button class="btn btn-yellow" onclick="finishStep2()">Toliau →</button>
+      </div>
+    </div>
+    <div id="finish-step2" style="display:none;">
+      <div style="color:var(--yellow);margin-bottom:16px;font-size:14px;">Ar tikrai baigti renginį? Po šio veiksmo teisėjai nebegalės fiksuoti naujų duomenų, tik administratorius gali redaguoti.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeModal('modal-finish-event')">Atšaukti</button>
+        <button class="btn btn-yellow" onclick="finishStep3()">Taip, toliau →</button>
+      </div>
+    </div>
+    <div id="finish-step3" style="display:none;">
+      <div style="color:var(--muted);margin-bottom:10px;font-size:14px;">Įveskite <strong style="color:var(--accent)">BAIGTI</strong> ir paspauskite mygtuką:</div>
+      <div class="form-group">
+        <input type="text" id="finish-confirm-input" placeholder="Įveskite BAIGTI" autocomplete="off" autocorrect="off" autocapitalize="characters" style="font-size:20px;text-align:center;letter-spacing:4px;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeModal('modal-finish-event')">Atšaukti</button>
+        <button class="btn btn-primary" onclick="doFinishEvent()">🏁 UŽBAIGTI RENGINĮ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase compat SDK (classic scripts — works on iOS Safari, file:// and all hostings) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -336,7 +382,7 @@ var db = firebase.database();
 var R  = 'race';
 
 // ── Local state mirror ───────────────────────────────────────
-let S = { config:{raceName:'',cp1:10,cp2:10}, racers:{}, times:{}, gr1Closed:false, gr2Closed:false };
+let S = { config:{raceName:'',cp1:10,cp2:10}, racers:{}, times:{}, returned:{}, gr1Closed:false, gr2Closed:false, eventFinished:false };
 let currentRole = null, currentGR = null;
 let editData = {}, activeResClass = 'SOFT';
 let marshalInputBuilt = false, marshalRefreshTimer = null;
@@ -356,11 +402,13 @@ db.ref('.info/connected').on('value', function(snap){
 
 db.ref(R).on('value', function(snap){
   var d = snap.val() || {};
-  S.config    = d.config    || {raceName:'',cp1:10,cp2:10};
-  S.racers    = d.racers    || {};
-  S.times     = d.times     || {};
-  S.gr1Closed = d.gr1Closed || false;
-  S.gr2Closed = d.gr2Closed || false;
+  S.config        = d.config        || {raceName:'',cp1:10,cp2:10};
+  S.racers        = d.racers        || {};
+  S.times         = d.times         || {};
+  S.returned      = d.returned      || {};
+  S.gr1Closed     = d.gr1Closed     || false;
+  S.gr2Closed     = d.gr2Closed     || false;
+  S.eventFinished = d.eventFinished || false;
   updateHomeRaceName();
   refreshCurrentScreen();
 }, function(err){ console.error(err); });
@@ -426,11 +474,12 @@ document.addEventListener('visibilitychange', async () => {
 // ── Marshal ──────────────────────────────────────────────────
 function pickMarshal(num) {
   currentRole = num;
-  currentGR   = num<=3 ? 1 : 2;
+  currentGR   = num===7 ? null : (num<=3 ? 1 : 2);
   marshalInputBuilt = false;
   document.getElementById('marshal-input-area').innerHTML = '';
   document.getElementById('marshal-stats-area').innerHTML = '<div class="spinner"></div>';
-  document.getElementById('marshal-title').textContent = `Teisėjas ${num} · GR${currentGR}`;
+  var titleText = num===7 ? 'Maršruto pabaiga' : 'Teisėjas ' + num + ' · GR' + currentGR;
+  document.getElementById('marshal-title').textContent = titleText;
   document.getElementById('marshal-sub').textContent   = S.config.raceName||'—';
   goTo('screen-marshal');
   requestWakeLock();
@@ -503,10 +552,39 @@ function buildMarshalInput() {
         <button class="btn btn-yellow btn-action" id="m-action-btn" onclick="window.regCP(${gr},${maxCP})">📸 ĮRAŠYTI CP</button>
       </div>
       <hr class="divider">`;
+  } else if (role===7) {
+    const finished = S.eventFinished;
+    area.innerHTML = `
+      <div id="event-finished-alert" class="alert alert-err" style="${finished?'':'display:none'}">🏁 Renginys užbaigtas. Naujų grįžimų fiksuoti nebegalima.</div>
+      <div id="m7-input-wrap" style="${finished?'display:none':''}">
+        <div class="section-title">Fiksuoti grįžimą į bazę</div>
+        <div class="form-group">
+          <label>Dalyvio numeris</label>
+          <input type="number" id="m-num" placeholder="Įveskite numerį" min="1" inputmode="numeric"
+            autocomplete="off" autocorrect="off" style="font-size:32px;text-align:center;padding:20px;">
+        </div>
+        <button class="btn btn-green btn-action" id="m-action-btn" onclick="window.regReturn()">🏠 GRĮŽO Į BAZĘ</button>
+      </div>
+      <hr class="divider">
+      <button class="btn btn-yellow" id="finish-event-btn" onclick="window.startFinishEvent()" style="margin-bottom:10px;${finished?'display:none':''}">🏁 Užbaigti renginį</button>
+      <div id="event-finished-badge" class="alert" style="background:var(--surface2);border-color:var(--accent);color:var(--accent);text-align:center;${finished?'':'display:none'}">✅ Renginys užbaigtas</div>
+      <hr class="divider">`;
   }
 }
 
 function updateClosedAlert() {
+  // Role 7 — event finished alert
+  if (currentRole===7) {
+    const finishedAlert = document.getElementById('event-finished-alert');
+    const inputWrap     = document.getElementById('m7-input-wrap');
+    const finishBtn     = document.getElementById('finish-event-btn');
+    const finishedBadge = document.getElementById('event-finished-badge');
+    if (finishedAlert) finishedAlert.style.display = S.eventFinished ? '' : 'none';
+    if (inputWrap)     inputWrap.style.display     = S.eventFinished ? 'none' : '';
+    if (finishBtn)     finishBtn.style.display     = S.eventFinished ? 'none' : '';
+    if (finishedBadge) finishedBadge.style.display = S.eventFinished ? '' : 'none';
+    return;
+  }
   const gr = currentGR;
   if (!gr) return;
   const closed = gr===1 ? S.gr1Closed : S.gr2Closed;
@@ -519,21 +597,81 @@ function updateClosedAlert() {
 function updateMarshalStats() {
   const stats = document.getElementById('marshal-stats-area');
   if (!stats||!currentRole) return;
-  const gr   = currentGR;
   const role = currentRole;
   const now  = Date.now()/1000;
-  const maxCP = gr===1?(S.config.cp1||10):(S.config.cp2||10);
-
   const allRacers = Object.values(S.racers).sort((a,b)=>+a.num-+b.num);
-  const grKeys    = Object.keys(S.times).filter(k=>k.endsWith(`_${gr}`));
-  const running   = grKeys.filter(k=>S.times[k].start!=null&&S.times[k].finish==null);
-  const finished  = grKeys.filter(k=>S.times[k].finish!=null);
 
   // Search filter
   const searchEl = document.getElementById('marshal-search');
   const filter   = searchEl ? searchEl.value.toLowerCase() : '';
 
   let h = '';
+
+  // ── Role 7 (route end) has its own layout ──────────────────
+  if (role===7) {
+    const returnedCount = Object.keys(S.returned).length;
+    const notReturned   = allRacers.filter(r => !S.returned[r.num]);
+
+    h += `<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+      <span class="badge badge-gray">Iš viso: ${allRacers.length}</span>
+      <span class="badge badge-green">Grįžo: ${returnedCount}</span>
+      <span class="badge badge-yellow">Dar negrįžo: ${notReturned.length}</span>
+      <span class="badge badge-blue">Soft: ${allRacers.filter(r=>r.class==='SOFT').length}</span>
+      <span class="badge badge-red" style="border-color:var(--hard)">Hard: ${allRacers.filter(r=>r.class==='HARD').length}</span>
+    </div>`;
+
+    h += `<div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="marshal-search" placeholder="Ieškoti pagal numerį arba pavadinimą..."
+        value="${filter}" oninput="window.marshalSearch()" autocomplete="off" autocorrect="off" autocapitalize="off"
+        style="padding-left:36px;">
+    </div>`;
+
+    h += `<div class="section-title">Visi dalyviai</div>`;
+
+    const filtered = allRacers.filter(r =>
+      !filter || r.num.toString().includes(filter) || r.name.toLowerCase().includes(filter)
+    );
+
+    if (!filtered.length) {
+      h += `<div style="text-align:center;color:var(--muted);padding:20px;">Nerasta</div>`;
+    } else {
+      filtered.forEach(r => {
+        const t1 = S.times[`${r.num}_1`] || {};
+        const t2 = S.times[`${r.num}_2`] || {};
+        const hasAllData =
+          t1.start!=null && t1.finish!=null && t1.cp!=null &&
+          t2.start!=null && t2.finish!=null && t2.cp!=null;
+        const returned = !!S.returned[r.num];
+
+        let statuses = '';
+        statuses += returned
+          ? `<span class="badge badge-green">🏠 Grįžo</span>`
+          : `<span class="badge badge-gray">✗ Negrįžo</span>`;
+        statuses += hasAllData
+          ? `<span class="badge badge-green">📊 Duomenys ✓</span>`
+          : `<span class="badge badge-yellow">📊 Trūksta</span>`;
+
+        h += `<div class="p-row">
+          <div class="p-num">${r.num}</div>
+          <div class="p-name">
+            ${r.name}
+            <div style="margin-top:2px;"><span class="racer-class ${r.class==='SOFT'?'class-soft':'class-hard'}">${r.class}</span></div>
+          </div>
+          <div class="p-statuses">${statuses}</div>
+        </div>`;
+      });
+    }
+    stats.innerHTML = h;
+    return;
+  }
+
+  // ── Roles 1-6 ──────────────────────────────────────────────
+  const gr    = currentGR;
+  const maxCP = gr===1?(S.config.cp1||10):(S.config.cp2||10);
+  const grKeys    = Object.keys(S.times).filter(k=>k.endsWith(`_${gr}`));
+  const running   = grKeys.filter(k=>S.times[k].start!=null&&S.times[k].finish==null);
+  const finished  = grKeys.filter(k=>S.times[k].finish!=null);
 
   // Quick stats bar
   h += `<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
@@ -662,12 +800,94 @@ window.regCP = async function(gr, maxCP) {
   showToast(`${cp>=maxCP?'✅':'⚠️'} #${num} — ${cp}/${maxCP} CP GR${gr}`);
 };
 
+// ── Marshal 7: Return to base ─────────────────────────────────
+window.regReturn = async function() {
+  const inp = document.getElementById('m-num');
+  const num = (inp?.value||'').trim();
+  if (!num) { showToast('⚠️ Įveskite dalyvio numerį!', 'warn'); return; }
+  if (!S.racers[num]) { showToast(`❌ Dalyvis #${num} neregistruotas!`, 'err'); inp.value=''; inp.focus(); return; }
+  if (S.returned[num]) { showToast(`⚠️ #${num} jau užfiksuotas kaip grįžęs!`, 'warn'); inp.value=''; inp.focus(); return; }
+
+  // Check completeness of data
+  const t1 = S.times[`${num}_1`] || {};
+  const t2 = S.times[`${num}_2`] || {};
+  const missing = [];
+  if (t1.start  == null) missing.push('GR1 Startas');
+  if (t1.finish == null) missing.push('GR1 Finišas');
+  if (t1.cp     == null) missing.push('GR1 CP');
+  if (t2.start  == null) missing.push('GR2 Startas');
+  if (t2.finish == null) missing.push('GR2 Finišas');
+  if (t2.cp     == null) missing.push('GR2 CP');
+
+  lockBtn();
+  inp.value=''; inp.focus();
+  await fbUpd(`returned/${num}`, { at: Date.now()/1000 });
+
+  const racer = S.racers[num];
+  if (missing.length) {
+    showToast(`🏠 #${num} ${racer.name} — Grįžo. ⚠️ Trūksta: ${missing.join(', ')}`, 'warn');
+  } else {
+    showToast(`🏠 #${num} ${racer.name} — Grįžo su pilnais duomenimis ✓`);
+  }
+};
+
+// ── Finish event (multi-step) ────────────────────────────────
+window.startFinishEvent = function() {
+  // Compute summary
+  const allRacers = Object.values(S.racers);
+  const total = allRacers.length;
+  const returnedCount = allRacers.filter(r => S.returned[r.num]).length;
+  const willDnf = total - returnedCount;
+  document.getElementById('finish-summary').innerHTML =
+    `<strong>Suvestinė:</strong><br>` +
+    `• Iš viso dalyvių: <strong>${total}</strong><br>` +
+    `• Grįžo į bazę: <strong style="color:var(--green)">${returnedCount}</strong><br>` +
+    `• Taps DNF: <strong style="color:var(--red)">${willDnf}</strong>`;
+  document.getElementById('finish-step1').style.display='';
+  document.getElementById('finish-step2').style.display='none';
+  document.getElementById('finish-step3').style.display='none';
+  document.getElementById('finish-confirm-input').value='';
+  document.getElementById('modal-finish-event').classList.add('open');
+};
+window.finishStep2 = function() {
+  document.getElementById('finish-step1').style.display='none';
+  document.getElementById('finish-step2').style.display='';
+};
+window.finishStep3 = function() {
+  document.getElementById('finish-step2').style.display='none';
+  document.getElementById('finish-step3').style.display='';
+  setTimeout(()=>document.getElementById('finish-confirm-input').focus(), 100);
+};
+window.doFinishEvent = async function() {
+  const val = document.getElementById('finish-confirm-input').value.trim().toUpperCase();
+  if (val!=='BAIGTI') { showToast('⚠️ Įveskite BAIGTI!', 'warn'); return; }
+  await fbSet('eventFinished', true);
+  closeModal('modal-finish-event');
+  showToast('🏁 Renginys užbaigtas!');
+};
+
 // ── Admin: Setup ─────────────────────────────────────────────
 function renderSetup() {
   document.getElementById('cfg-race-name').value = S.config.raceName||'';
   document.getElementById('cfg-cp1').value        = S.config.cp1||10;
   document.getElementById('cfg-cp2').value        = S.config.cp2||10;
+  const statusEl = document.getElementById('admin-event-status');
+  const reopenBtn = document.getElementById('reopen-event-btn');
+  if (S.eventFinished) {
+    statusEl.innerHTML = `<span class="badge badge-red" style="font-size:13px;padding:6px 12px;">🏁 Renginys UŽBAIGTAS</span>`;
+    reopenBtn.style.display = '';
+  } else {
+    statusEl.innerHTML = `<span class="badge badge-green" style="font-size:13px;padding:6px 12px;">▶ Renginys VYKSTA</span>`;
+    reopenBtn.style.display = 'none';
+  }
 }
+
+window.reopenEvent = function() {
+  showConfirm('Atidaryti renginį iš naujo?', 'Teisėjai vėl galės fiksuoti duomenis. Dalyviai, buvę DNF, grįš į įprastą statusą.', async ()=>{
+    await fbSet('eventFinished', false);
+    showToast('🔓 Renginys atidarytas iš naujo');
+  });
+};
 
 window.saveConfig = async function() {
   const name = document.getElementById('cfg-race-name').value.trim();
@@ -698,7 +918,7 @@ window.resetStep3 = function() {
 window.doReset = async function() {
   const val = document.getElementById('reset-confirm-input').value.trim().toUpperCase();
   if (val!=='RESET') { showToast('⚠️ Įveskite RESET!', 'warn'); return; }
-  await db.ref(R).set({ config: S.config, racers:null, times:null, gr1Closed:false, gr2Closed:false });
+  await db.ref(R).set({ config: S.config, racers:null, times:null, returned:null, gr1Closed:false, gr2Closed:false, eventFinished:false });
   closeModal('modal-reset');
   showToast('🗑️ Duomenys ištrinti');
 };
@@ -721,6 +941,7 @@ window.removeRacer = function(num) {
     await fbDel(`racers/${num}`);
     await fbDel(`times/${num}_1`);
     await fbDel(`times/${num}_2`);
+    await fbDel(`returned/${num}`);
     showToast(`🗑️ #${num} ištrintas`);
   });
 };
@@ -813,7 +1034,8 @@ function buildRacerData(cls) {
       if (!hasC2) missing.push('GR2 CP');
 
       return { num,r,t1,t2,time1,time2,finishedTime1,finishedTime2,totalTime,cp1,cp2,totalCP,complete,missing,
-               hasS1,hasF1,hasC1,hasS2,hasF2,hasC2 };
+               hasS1,hasF1,hasC1,hasS2,hasF2,hasC2,
+               returned: !!S.returned[num] };
     });
 }
 
@@ -822,14 +1044,36 @@ function renderResults(cls) {
   if (!content) return;
   const maxCP1=S.config.cp1||10, maxCP2=S.config.cp2||10, maxTotal=maxCP1+maxCP2;
   const now = Date.now()/1000;
+  const eventFinished = S.eventFinished;
 
   const data = buildRacerData(cls);
-  const finished = data.filter(d=>d.complete).sort((a,b)=>{
+
+  // Classification logic:
+  // - Classified: complete data + (not finished OR returned)
+  //   When event is finished, a racer must have returned to be classified
+  //   When event is not finished, complete data is enough (returned not required)
+  // - DNF (when event finished): racers without return OR with missing data
+  // - In progress (event not finished): started but not complete
+  // - Not started (event not finished): never started
+
+  const canClassify = d => d.complete && (!eventFinished || d.returned);
+
+  const finished = data.filter(canClassify).sort((a,b)=>{
     if (b.totalCP!==a.totalCP) return b.totalCP-a.totalCP;
     return a.totalTime-b.totalTime;
   });
-  const inProgress = data.filter(d=>!d.complete&&(d.hasS1||d.hasS2)).sort((a,b)=>+a.num-+b.num);
-  const notStarted = data.filter(d=>!d.complete&&!d.hasS1&&!d.hasS2).sort((a,b)=>+a.num-+b.num);
+
+  let inProgress = [], notStarted = [], dnf = [];
+
+  if (eventFinished) {
+    // Everything else is DNF
+    dnf = data.filter(d => !canClassify(d)).sort((a,b)=>+a.num-+b.num);
+  } else {
+    inProgress = data.filter(d=>!d.complete&&(d.hasS1||d.hasS2)).sort((a,b)=>+a.num-+b.num);
+    notStarted = data.filter(d=>!d.complete&&!d.hasS1&&!d.hasS2).sort((a,b)=>+a.num-+b.num);
+    // Also: racers with complete data but not returned (when event not finished)
+    // — already included in finished above because !eventFinished makes canClassify true
+  }
 
   if (!data.length) {
     content.innerHTML='<div style="text-align:center;color:var(--muted);padding:28px 0;">Nėra registruotų dalyvių</div>';
@@ -838,6 +1082,13 @@ function renderResults(cls) {
 
   let h='';
 
+  // Event finished banner
+  if (eventFinished) {
+    h+=`<div class="alert" style="background:var(--surface2);border-color:var(--accent);color:var(--accent);margin-bottom:12px;text-align:center;">
+      🏁 Renginys užbaigtas. Administratorius gali redaguoti duomenis — rezultatai persiskaičiuos automatiškai.
+    </div>`;
+  }
+
   // Classified
   if (finished.length) {
     h+=`<div class="section-title" style="color:var(--green)">✅ Klasifikuoti (${finished.length})</div>
@@ -845,11 +1096,14 @@ function renderResults(cls) {
       <th>#</th><th>Nr.</th><th>Komanda</th>
       <th>GR1</th><th>GR1 CP</th>
       <th>GR2</th><th>GR2 CP</th>
-      <th>Viso</th><th>CP</th><th></th>
+      <th>Viso</th><th>CP</th><th>🏠</th><th></th>
     </tr></thead><tbody>`;
     finished.forEach((d,i)=>{
       const p=i+1;
       const pc=p===1?'place-1':p===2?'place-2':p===3?'place-3':'';
+      const retBadge = d.returned
+        ? `<span class="badge badge-green">✓</span>`
+        : `<span class="badge badge-gray">—</span>`;
       h+=`<tr>
         <td><span class="place-num ${pc}">${p}</span></td>
         <td style="font-family:'Barlow Condensed';font-size:18px;font-weight:900;color:var(--accent)">${d.num}</td>
@@ -860,34 +1114,39 @@ function renderResults(cls) {
         <td><span class="badge ${d.cp2>=maxCP2?'badge-green':'badge-red'}">${d.cp2}/${maxCP2}</span></td>
         <td style="font-weight:700;color:var(--accent2)">${formatTime(d.totalTime)}</td>
         <td><span class="badge ${d.totalCP>=maxTotal?'badge-green':'badge-orange'}">${d.totalCP}/${maxTotal}</span></td>
+        <td>${retBadge}</td>
         <td><button class="btn btn-ghost btn-sm" onclick="openEditResult('${d.num}')">✏️</button></td>
       </tr>`;
     });
     h+='</tbody></table></div>';
   }
 
-  // In progress (started but not complete)
+  // In progress (event not finished)
   if (inProgress.length) {
     h+=`<div class="section-title" style="color:var(--yellow);margin-top:16px">⏳ Vyksta / trūksta duomenų (${inProgress.length})</div>
     <div style="overflow-x:auto"><table class="results-table"><thead><tr>
-      <th>Nr.</th><th>Komanda</th><th>GR1</th><th>GR2</th><th>Trūksta</th><th></th>
+      <th>Nr.</th><th>Komanda</th><th>GR1</th><th>GR2</th><th>Trūksta</th><th>🏠</th><th></th>
     </tr></thead><tbody>`;
     inProgress.forEach(d=>{
       const t1live = d.hasS1&&!d.hasF1 ? `<span class="live-time">⏱ ${formatTime(Math.floor(now-d.t1.start))}</span>` : (d.finishedTime1!=null?formatTime(d.finishedTime1):'—');
       const t2live = d.hasS2&&!d.hasF2 ? `<span class="live-time">⏱ ${formatTime(Math.floor(now-d.t2.start))}</span>` : (d.finishedTime2!=null?formatTime(d.finishedTime2):'—');
       const mis = d.missing.map(m=>`<span class="badge badge-red" style="font-size:9px">${m}</span>`).join(' ');
+      const retBadge = d.returned
+        ? `<span class="badge badge-green">✓</span>`
+        : `<span class="badge badge-gray">—</span>`;
       h+=`<tr>
         <td style="font-family:'Barlow Condensed';font-size:18px;font-weight:900;color:var(--accent)">${d.num}</td>
         <td style="font-weight:600">${d.r.name}</td>
         <td>${t1live}</td><td>${t2live}</td>
         <td>${mis}</td>
+        <td>${retBadge}</td>
         <td><button class="btn btn-ghost btn-sm" onclick="openEditResult('${d.num}')">✏️</button></td>
       </tr>`;
     });
     h+='</tbody></table></div>';
   }
 
-  // Not started
+  // Not started (event not finished)
   if (notStarted.length) {
     h+=`<div class="section-title" style="color:var(--muted);margin-top:16px">⛔ Nepradėjo (${notStarted.length})</div>
     <div style="overflow-x:auto"><table class="results-table"><thead><tr>
@@ -904,6 +1163,34 @@ function renderResults(cls) {
     h+='</tbody></table></div>';
   }
 
+  // DNF (event finished)
+  if (dnf.length) {
+    h+=`<div class="section-title" style="color:var(--red);margin-top:16px">❌ DNF (${dnf.length})</div>
+    <div style="overflow-x:auto"><table class="results-table"><thead><tr>
+      <th>Nr.</th><th>Komanda</th><th>GR1</th><th>GR1 CP</th><th>GR2</th><th>GR2 CP</th><th>🏠</th><th>Priežastis</th><th></th>
+    </tr></thead><tbody>`;
+    dnf.forEach(d=>{
+      const reasons = [];
+      if (!d.returned) reasons.push('Negrįžo');
+      if (d.missing.length) reasons.push('Trūksta: ' + d.missing.join(', '));
+      const retBadge = d.returned
+        ? `<span class="badge badge-green">✓</span>`
+        : `<span class="badge badge-red">✗</span>`;
+      h+=`<tr class="dnf-row">
+        <td style="font-family:'Barlow Condensed';font-size:18px;font-weight:900;color:var(--muted)">${d.num}</td>
+        <td style="font-weight:600">${d.r.name}</td>
+        <td>${d.finishedTime1!=null?formatTime(d.finishedTime1):'—'}</td>
+        <td>${d.cp1!=null?`<span class="badge ${d.cp1>=maxCP1?'badge-green':'badge-red'}">${d.cp1}/${maxCP1}</span>`:'—'}</td>
+        <td>${d.finishedTime2!=null?formatTime(d.finishedTime2):'—'}</td>
+        <td>${d.cp2!=null?`<span class="badge ${d.cp2>=maxCP2?'badge-green':'badge-red'}">${d.cp2}/${maxCP2}</span>`:'—'}</td>
+        <td>${retBadge}</td>
+        <td style="font-size:11px;color:var(--red)">${reasons.join(' · ')}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="openEditResult('${d.num}')">✏️</button></td>
+      </tr>`;
+    });
+    h+='</tbody></table></div>';
+  }
+
   content.innerHTML=h;
 }
 
@@ -911,6 +1198,7 @@ function renderResults(cls) {
 window.openEditResult = function(num) {
   const t1=S.times[`${num}_1`]||{}, t2=S.times[`${num}_2`]||{};
   const r=S.racers[num];
+  const returned = !!S.returned[num];
   editData={type:'result_full', num};
 
   const toVilnius = ts => {
@@ -932,7 +1220,14 @@ window.openEditResult = function(num) {
       <div class="form-group"><label>Startas</label><input type="text" id="e-s2" placeholder="HH:MM:SS" value="${toVilnius(t2.start)}" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}"></div>
       <div class="form-group"><label>Finišas</label><input type="text" id="e-f2" placeholder="HH:MM:SS" value="${toVilnius(t2.finish)}" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}"></div>
     </div>
-    <div class="form-group"><label>GR2 CP</label><input type="number" id="e-c2" placeholder="CP kiekis" value="${t2.cp!=null?t2.cp:''}" inputmode="numeric"></div>`;
+    <div class="form-group"><label>GR2 CP</label><input type="number" id="e-c2" placeholder="CP kiekis" value="${t2.cp!=null?t2.cp:''}" inputmode="numeric"></div>
+    <div class="section-title" style="margin-top:10px">Grįžimas į bazę</div>
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="e-returned" ${returned?'checked':''} style="width:auto;margin-right:8px;vertical-align:middle;">
+        Dalyvis grįžo į bazę
+      </label>
+    </div>`;
   document.getElementById('modal-edit').classList.add('open');
 };
 
@@ -971,6 +1266,17 @@ window.saveEdit = async function() {
       if (cv!=='') upd.cp=parseInt(cv);
       if (Object.keys(upd).length) await fbUpd(`times/${key}`,upd);
     }
+    // Return status
+    const retChk = document.getElementById('e-returned');
+    if (retChk) {
+      const nowReturned = retChk.checked;
+      const wasReturned = !!S.returned[num];
+      if (nowReturned && !wasReturned) {
+        await fbUpd(`returned/${num}`, { at: Date.now()/1000 });
+      } else if (!nowReturned && wasReturned) {
+        await fbDel(`returned/${num}`);
+      }
+    }
     showToast('✅ Rezultatas atnaujintas');
     renderResults(activeResClass);
   }
@@ -981,108 +1287,134 @@ window.saveEdit = async function() {
 window.exportExcel = async function() {
   showToast('📊 Ruošiamas Excel failas...');
   try {
-    // Load SheetJS
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
     const XLSX = window.XLSX;
     const wb = XLSX.utils.book_new();
-    const maxCP1=S.config.cp1||10, maxCP2=S.config.cp2||10;
+    const maxCP1 = S.config.cp1||10, maxCP2 = S.config.cp2||10;
+    const eventFinished = S.eventFinished;
+
+    // Convert Unix timestamp → Excel time value (fraction of day in Vilnius TZ)
+    // Excel stores time as fraction of 24h (0.5 = 12:00). Using just time-of-day.
+    const toExcelTime = ts => {
+      if (!ts) return null;
+      const d = new Date(ts*1000);
+      // Get hours/minutes/seconds in Vilnius timezone
+      const parts = d.toLocaleTimeString('en-GB', {
+        timeZone:'Europe/Vilnius', hour12:false,
+        hour:'2-digit', minute:'2-digit', second:'2-digit'
+      }).split(':').map(Number);
+      return (parts[0]*3600 + parts[1]*60 + parts[2]) / 86400;
+    };
 
     for (const cls of ['SOFT','HARD']) {
       const data = buildRacerData(cls);
-      const finished = data.filter(d=>d.complete).sort((a,b)=>{
+      const canClassify = d => d.complete && (!eventFinished || d.returned);
+      const finished = data.filter(canClassify).sort((a,b)=>{
         if (b.totalCP!==a.totalCP) return b.totalCP-a.totalCP;
         return a.totalTime-b.totalTime;
       });
-      const dnf = data.filter(d=>!d.complete).sort((a,b)=>+a.num-+b.num);
+      const dnf = data.filter(d => !canClassify(d)).sort((a,b)=>+a.num-+b.num);
 
-      // Sheet data rows
       const rows = [];
-      // Config row
-      rows.push([`Max CP GR1: ${maxCP1}`, '', `Max CP GR2: ${maxCP2}`, '', `Lenktynės: ${S.config.raceName}`]);
-      rows.push([]);
-      // Header
+
+      // Row 1 — title
+      rows.push([`${S.config.raceName||'Enduro'} — ${cls==='SOFT'?'Soft Enduro':'Hard Enduro'}`]);
+      // Row 2 — race config
+      rows.push([`Max CP GR1: ${maxCP1}`, '', `Max CP GR2: ${maxCP2}`, '',
+                 `Būsena: ${eventFinished?'Renginys užbaigtas':'Vyksta'}`]);
+      // Row 3 — formulas legend
+      rows.push(['Formulės:',
+                 'GR1 laikas = GR1 Finišas - GR1 Startas',
+                 'GR2 laikas = GR2 Finišas - GR2 Startas',
+                 'Bendras laikas = GR1 laikas + GR2 laikas',
+                 'CP viso = GR1 CP + GR2 CP']);
+      // Row 4 — ranking rule
+      rows.push(['Rikiavimas:',
+                 '1) Daugiau CP = aukštesnė vieta',
+                 '2) Esant vienodai CP — mažesnis bendras laikas = aukštesnė vieta',
+                 'DNF: nenurinkti visi 6 duomenys arba negrįžta į bazę (kai renginys užbaigtas)']);
+      rows.push([]); // row 5 blank
+
+      // Row 6 — column headers
+      // Columns: A=Vieta B=Nr C=Komanda D=Klasė
+      //   E=GR1 Startas F=GR1 Finišas G=GR1 Laikas H=GR1 CP
+      //   I=GR2 Startas J=GR2 Finišas K=GR2 Laikas L=GR2 CP
+      //   M=Bendras laikas N=CP viso O=Grįžo P=Statusas
       rows.push([
         'Vieta','Nr.','Komanda','Klasė',
-        'GR1 Startas','GR1 Finišas','GR1 Laikas (h:mm:ss)','GR1 Laikas (s)','GR1 CP',
-        'GR2 Startas','GR2 Finišas','GR2 Laikas (h:mm:ss)','GR2 Laikas (s)','GR2 CP',
-        'Bendras laikas (h:mm:ss)','Bendras laikas (s)','CP viso','Statusas'
+        'GR1 Startas','GR1 Finišas','GR1 Laikas','GR1 CP',
+        'GR2 Startas','GR2 Finišas','GR2 Laikas','GR2 CP',
+        'Bendras laikas','CP viso','Grįžo','Statusas'
       ]);
 
-      const dataStartRow = 4; // 1-indexed, rows 1-2 = config, row 3 = blank header separator, row 4+ = data... actually row 3 is header
-      // Let's track actual excel row
-      let excelRow = 4; // after 2 config rows + 1 empty + 1 header
+      let excelRow = 7; // first data row (1-indexed)
 
-      const toTimeStr = ts => {
-        if (!ts) return '';
-        return new Date(ts*1000).toLocaleTimeString('lt-LT',{timeZone:'Europe/Vilnius',hour12:false});
+      // Cell types:
+      //   Time value: {v: 0.386..., t:'n', z:'hh:mm:ss'}
+      //   Formula for duration: {f: '=F7-E7', t:'n', z:'[h]:mm:ss'}
+      //   Formula for total: {f: '=G7+K7', t:'n', z:'[h]:mm:ss'}
+
+      const makeTimeCell = ts => {
+        const v = toExcelTime(ts);
+        if (v==null) return '';
+        return { v, t:'n', z:'hh:mm:ss' };
       };
 
+      const makeRow = (d, placeCol, statusCol) => {
+        const r = excelRow;
+        return [
+          placeCol,                                                                // A Vieta
+          +d.num,                                                                  // B Nr.
+          d.r.name,                                                                // C Komanda
+          d.r.class,                                                               // D Klasė
+          makeTimeCell(d.t1.start),                                                // E GR1 Startas
+          makeTimeCell(d.t1.finish),                                               // F GR1 Finišas
+          { f:`IF(AND(E${r}<>"",F${r}<>""),F${r}-E${r},"")`, t:'n', z:'[h]:mm:ss' }, // G GR1 Laikas
+          d.cp1!=null ? d.cp1 : '',                                                // H GR1 CP
+          makeTimeCell(d.t2.start),                                                // I GR2 Startas
+          makeTimeCell(d.t2.finish),                                               // J GR2 Finišas
+          { f:`IF(AND(I${r}<>"",J${r}<>""),J${r}-I${r},"")`, t:'n', z:'[h]:mm:ss' }, // K GR2 Laikas
+          d.cp2!=null ? d.cp2 : '',                                                // L GR2 CP
+          { f:`IF(AND(ISNUMBER(G${r}),ISNUMBER(K${r})),G${r}+K${r},"")`, t:'n', z:'[h]:mm:ss' }, // M Bendras
+          { f:`IF(AND(H${r}<>"",L${r}<>""),H${r}+L${r},"")`, t:'n' },              // N CP viso
+          d.returned ? '✓' : '',                                                   // O Grįžo
+          statusCol                                                                // P Statusas
+        ];
+      };
+
+      // Classified section
       finished.forEach((d,i) => {
-        const place = i+1;
-        // Columns: A=place B=num C=name D=class E=gr1start F=gr1finish G=gr1time_fmt H=gr1time_s I=gr1cp
-        //          J=gr2start K=gr2finish L=gr2time_fmt M=gr2time_s N=gr2cp
-        //          O=total_fmt P=total_s Q=cp_total R=status
-        const r = excelRow;
-        const gr1TimeSec = d.finishedTime1;
-        const gr2TimeSec = d.finishedTime2;
-        const totalSec   = d.totalTime;
-
-        rows.push([
-          place,
-          +d.num,
-          d.r.name,
-          d.r.class,
-          toTimeStr(d.t1.start),    // E - GR1 start
-          toTimeStr(d.t1.finish),   // F - GR1 finish
-          { f: `=IF(AND(E${r}<>"",F${r}<>""),TEXT(F${r}-E${r},"[h]:mm:ss"),"")` }, // G
-          gr1TimeSec != null ? gr1TimeSec : '',  // H
-          d.cp1!=null?d.cp1:'',     // I
-          toTimeStr(d.t2.start),    // J
-          toTimeStr(d.t2.finish),   // K
-          { f: `=IF(AND(J${r}<>"",K${r}<>""),TEXT(K${r}-J${r},"[h]:mm:ss"),"")` }, // L
-          gr2TimeSec != null ? gr2TimeSec : '',  // M
-          d.cp2!=null?d.cp2:'',     // N
-          { f: `=IF(AND(H${r}<>"",M${r}<>""),TEXT((H${r}+M${r})/86400,"[h]:mm:ss"),"")` }, // O
-          totalSec != null ? totalSec : '',      // P
-          { f: `=IF(AND(I${r}<>"",N${r}<>""),I${r}+N${r},"")` }, // Q
-          'OK'  // R
-        ]);
+        rows.push(makeRow(d, i+1, 'OK'));
         excelRow++;
       });
 
-      dnf.forEach(d => {
-        const r = excelRow;
-        rows.push([
-          'DNF',
-          +d.num,
-          d.r.name,
-          d.r.class,
-          toTimeStr(d.t1.start),
-          toTimeStr(d.t1.finish),
-          { f: `=IF(AND(E${r}<>"",F${r}<>""),TEXT(F${r}-E${r},"[h]:mm:ss"),"")` },
-          d.finishedTime1!=null?d.finishedTime1:'',
-          d.cp1!=null?d.cp1:'',
-          toTimeStr(d.t2.start),
-          toTimeStr(d.t2.finish),
-          { f: `=IF(AND(J${r}<>"",K${r}<>""),TEXT(K${r}-J${r},"[h]:mm:ss"),"")` },
-          d.finishedTime2!=null?d.finishedTime2:'',
-          d.cp2!=null?d.cp2:'',
-          '',
-          '',
-          { f: `=IF(AND(I${r}<>"",N${r}<>""),I${r}+N${r},"")` },
-          'DNF — trūksta: '+d.missing.join(', ')
-        ]);
-        excelRow++;
-      });
+      // DNF section — divider row, then entries
+      if (dnf.length) {
+        rows.push([]); excelRow++;
+        rows.push(['─── DNF ───']); excelRow++;
+        dnf.forEach(d => {
+          const reasons = [];
+          if (eventFinished && !d.returned) reasons.push('Negrįžo');
+          if (d.missing.length) reasons.push('Trūksta: ' + d.missing.join(', '));
+          if (!reasons.length) reasons.push('Neklasifikuotas');
+          rows.push(makeRow(d, 'DNF', reasons.join(' · ')));
+          excelRow++;
+        });
+      }
 
       const ws = XLSX.utils.aoa_to_sheet(rows);
 
       // Column widths
       ws['!cols'] = [
-        {wch:7},{wch:5},{wch:28},{wch:8},
-        {wch:10},{wch:10},{wch:14},{wch:10},{wch:6},
-        {wch:10},{wch:10},{wch:14},{wch:10},{wch:6},
-        {wch:14},{wch:10},{wch:7},{wch:30}
+        {wch:7},{wch:5},{wch:26},{wch:6},
+        {wch:10},{wch:10},{wch:11},{wch:6},
+        {wch:10},{wch:10},{wch:11},{wch:6},
+        {wch:12},{wch:7},{wch:6},{wch:40}
+      ];
+
+      // Merges for title + formulas legend (aesthetic only)
+      ws['!merges'] = [
+        {s:{r:0,c:0},e:{r:0,c:15}}  // Row 1 title spans all columns
       ];
 
       XLSX.utils.book_append_sheet(wb, ws, cls==='SOFT'?'Soft Enduro':'Hard Enduro');
@@ -1093,7 +1425,7 @@ window.exportExcel = async function() {
     showToast('✅ Excel failas atsisiųstas!');
   } catch(e) {
     console.error(e);
-    showToast('❌ Klaida kuriant Excel failą', 'err');
+    showToast('❌ Klaida kuriant Excel failą: '+e.message, 'err');
   }
 };
 
