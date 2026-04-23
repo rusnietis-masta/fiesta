@@ -2,150 +2,176 @@
 <html lang="lt">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ENDURO RACE SYSTEM</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap');
-  :root {
-    --bg:#0a0a0a; --surface:#141414; --surface2:#1e1e1e; --border:#2a2a2a;
-    --accent:#ff5500; --accent2:#ffaa00; --soft:#00aaff; --hard:#ff5500;
-    --green:#00cc66; --red:#ff3333; --text:#f0f0f0; --muted:#888; --yellow:#ffcc00;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
-  .screen{display:none;min-height:100vh;}
-  .screen.active{display:flex;flex-direction:column;}
-  .header{background:var(--surface);border-bottom:2px solid var(--accent);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-  .header-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--accent);}
-  .header-sub{font-size:11px;color:var(--muted);letter-spacing:1px;}
-  .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;display:inline-block;margin-right:4px;}
-  .sync-dot.off{background:var(--red);animation:none;}
-  .sync-dot.connecting{background:var(--yellow);animation:pulse 1s infinite;}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-  .content{flex:1;padding:16px;max-width:700px;margin:0 auto;width:100%;}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;border:none;cursor:pointer;padding:12px 20px;border-radius:4px;transition:all 0.15s;-webkit-tap-highlight-color:transparent;width:100%;}
-  .btn-primary{background:var(--accent);color:#fff;}
-  .btn-primary:active{background:#ff7733;transform:scale(.98);}
-  .btn-green{background:var(--green);color:#000;}
-  .btn-green:active{transform:scale(.98);}
-  .btn-red{background:var(--red);color:#fff;}
-  .btn-yellow{background:var(--yellow);color:#000;}
-  .btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
-  .btn-big{font-size:22px;padding:22px;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);}
-  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;}
-  .btn-sm{padding:8px 14px;font-size:13px;width:auto;}
-  .role-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
-  .role-card{background:var(--surface);border:2px solid var(--border);border-radius:8px;padding:20px 16px;cursor:pointer;transition:all 0.15s;text-align:center;-webkit-tap-highlight-color:transparent;}
-  .role-card:active{border-color:var(--accent);transform:scale(.97);}
-  .role-card .icon{font-size:32px;margin-bottom:8px;}
-  .role-card .name{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:1px;}
-  .role-card .desc{font-size:11px;color:var(--muted);margin-top:4px;}
-  .role-card.full{grid-column:1/-1;}
-  .form-group{margin-bottom:16px;}
-  label{display:block;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
-  input,select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:12px 14px;border-radius:4px;font-family:'Barlow',sans-serif;font-size:16px;transition:border-color .15s;-webkit-appearance:none;}
-  input:focus,select:focus{outline:none;border-color:var(--accent);}
-  input[type=number]{-moz-appearance:textfield;}
-  input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;}
-  .section-title{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;}
-  .card-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;letter-spacing:1px;}
-  .racer-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
-  .racer-num{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;min-width:44px;text-align:center;color:var(--accent);}
-  .racer-info{flex:1;}
-  .racer-name{font-weight:600;font-size:14px;}
-  .racer-class{display:inline-block;font-size:10px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;margin-top:2px;}
-  .class-soft{background:rgba(0,170,255,.2);color:var(--soft);border:1px solid var(--soft);}
-  .class-hard{background:rgba(255,85,0,.2);color:var(--hard);border:1px solid var(--hard);}
-  .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;letter-spacing:.8px;padding:3px 8px;border-radius:20px;text-transform:uppercase;}
-  .badge-green{background:rgba(0,204,102,.15);color:var(--green);border:1px solid var(--green);}
-  .badge-yellow{background:rgba(255,204,0,.15);color:var(--yellow);border:1px solid var(--yellow);}
-  .badge-red{background:rgba(255,51,51,.15);color:var(--red);border:1px solid var(--red);}
-  .badge-gray{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
-  .badge-orange{background:rgba(255,85,0,.15);color:var(--accent);border:1px solid var(--accent);}
-  .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
-  .stat-box{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center;}
-  .stat-num{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;}
-  .stat-label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
-  .results-table{width:100%;border-collapse:collapse;font-size:13px;}
-  .results-table th{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);}
-  .results-table td{padding:10px;border-bottom:1px solid var(--border);}
-  .results-table tr:last-child td{border-bottom:none;}
-  .results-table tr.dnf td{color:var(--muted);}
-  .place-num{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;}
-  .place-1{color:var(--yellow);}
-  .place-2{color:#ccc;}
-  .place-3{color:#cd7f32;}
-  .alert{padding:12px 16px;border-radius:6px;margin-bottom:12px;font-size:14px;display:flex;align-items:center;gap:10px;}
-  .alert-warn{background:rgba(255,204,0,.1);border:1px solid var(--yellow);color:var(--yellow);}
-  .alert-err{background:rgba(255,51,51,.1);border:1px solid var(--red);color:var(--red);}
-  .alert-ok{background:rgba(0,204,102,.1);border:1px solid var(--green);color:var(--green);}
-  .tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--surface);border-radius:6px;padding:4px;}
-  .tab{flex:1;padding:8px;border:none;background:none;color:var(--muted);cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:4px;transition:all .15s;-webkit-tap-highlight-color:transparent;}
-  .tab.active{background:var(--accent);color:#fff;}
-  .running-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:8px;}
-  .running-time{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--accent2);}
-  .cp-input-row{display:flex;gap:8px;align-items:flex-end;}
-  .cp-input-row .form-group{flex:1;margin-bottom:0;}
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center;padding:20px;}
-  .modal-overlay.open{display:flex;}
-  .modal{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:24px;width:100%;max-width:420px;max-height:85vh;overflow-y:auto;}
-  .modal-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;}
-  .divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
-  .flex-row{display:flex;gap:8px;align-items:center;}
-  .flex-row .form-group{flex:1;margin-bottom:0;}
-  .logo-text{font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;letter-spacing:4px;text-transform:uppercase;color:var(--accent);line-height:1;}
-  .logo-sub{font-family:'Barlow Condensed',sans-serif;font-size:16px;letter-spacing:6px;color:var(--muted);text-transform:uppercase;}
-  .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto;}
-  @keyframes spin{to{transform:rotate(360deg);}}
-  ::-webkit-scrollbar{width:4px;}
-  ::-webkit-scrollbar-track{background:var(--bg);}
-  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap');
+:root {
+  --bg:#0a0a0a; --surface:#141414; --surface2:#1e1e1e; --border:#2a2a2a;
+  --accent:#ff5500; --accent2:#ffaa00; --soft:#00aaff; --hard:#ff5500;
+  --green:#00cc66; --red:#ff3333; --text:#f0f0f0; --muted:#777; --yellow:#ffcc00;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+.screen{display:none;min-height:100vh;}
+.screen.active{display:flex;flex-direction:column;}
+
+/* HEADER */
+.header{background:var(--surface);border-bottom:2px solid var(--accent);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.header-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--accent);}
+.header-sub{font-size:11px;color:var(--muted);letter-spacing:1px;}
+.sync-dot{width:9px;height:9px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;display:inline-block;margin-right:5px;vertical-align:middle;}
+.sync-dot.off{background:var(--red);animation:none;}
+.sync-dot.wait{background:var(--yellow);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+/* CONTENT */
+.content{flex:1;padding:14px;max-width:680px;margin:0 auto;width:100%;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;border:none;cursor:pointer;padding:14px 20px;border-radius:5px;transition:opacity .1s,transform .1s;-webkit-tap-highlight-color:transparent;width:100%;touch-action:manipulation;}
+.btn:active{opacity:.85;transform:scale(.98);}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-green{background:var(--green);color:#000;}
+.btn-red{background:var(--red);color:#fff;}
+.btn-yellow{background:var(--yellow);color:#000;}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-action{font-size:24px;padding:24px 20px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.5);min-height:80px;}
+.btn-sm{padding:8px 14px;font-size:13px;width:auto;}
+
+/* ROLE SELECT */
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+.role-card{background:var(--surface);border:2px solid var(--border);border-radius:8px;padding:18px 14px;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;transition:border-color .15s;touch-action:manipulation;user-select:none;-webkit-user-select:none;}
+.role-card:active{border-color:var(--accent);transform:scale(.97);}
+.role-card .icon{font-size:30px;margin-bottom:6px;}
+.role-card .name{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+.role-card .desc{font-size:11px;color:var(--muted);margin-top:3px;}
+.role-card.full{grid-column:1/-1;}
+
+/* FORMS */
+.form-group{margin-bottom:14px;}
+label{display:block;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+input,select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:13px 14px;border-radius:4px;font-family:'Barlow',sans-serif;font-size:16px;-webkit-appearance:none;autocomplete:off;}
+input:focus,select:focus{outline:none;border-color:var(--accent);}
+input[type=number]{-moz-appearance:textfield;}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;}
+
+/* TABS */
+.tabs{display:flex;gap:3px;margin-bottom:14px;background:var(--surface);border-radius:6px;padding:3px;}
+.tab{flex:1;padding:9px;border:none;background:none;color:var(--muted);cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:4px;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.tab.active{background:var(--accent);color:#fff;}
+
+/* SECTION TITLE */
+.section-title{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;letter-spacing:.6px;padding:3px 7px;border-radius:20px;text-transform:uppercase;white-space:nowrap;}
+.badge-green{background:rgba(0,204,102,.15);color:var(--green);border:1px solid var(--green);}
+.badge-yellow{background:rgba(255,204,0,.15);color:var(--yellow);border:1px solid var(--yellow);}
+.badge-red{background:rgba(255,51,51,.15);color:var(--red);border:1px solid var(--red);}
+.badge-gray{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+.badge-orange{background:rgba(255,85,0,.15);color:var(--accent);border:1px solid var(--accent);}
+.badge-blue{background:rgba(0,170,255,.15);color:var(--soft);border:1px solid var(--soft);}
+
+/* ALERT */
+.alert{padding:11px 14px;border-radius:6px;margin-bottom:12px;font-size:14px;display:flex;align-items:flex-start;gap:8px;}
+.alert-warn{background:rgba(255,204,0,.08);border:1px solid var(--yellow);color:var(--yellow);}
+.alert-err{background:rgba(255,51,51,.08);border:1px solid var(--red);color:var(--red);}
+.alert-ok{background:rgba(0,204,102,.08);border:1px solid var(--green);color:var(--green);}
+
+/* RACER ITEM */
+.racer-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px;}
+.racer-num{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;min-width:42px;text-align:center;color:var(--accent);}
+.racer-info{flex:1;min-width:0;}
+.racer-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.racer-class{display:inline-block;font-size:10px;font-weight:700;letter-spacing:1px;padding:2px 5px;border-radius:3px;margin-top:2px;}
+.class-soft{background:rgba(0,170,255,.2);color:var(--soft);border:1px solid var(--soft);}
+.class-hard{background:rgba(255,85,0,.2);color:var(--hard);border:1px solid var(--hard);}
+
+/* RESULTS TABLE */
+.results-table{width:100%;border-collapse:collapse;font-size:12px;}
+.results-table th{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-align:left;padding:7px 8px;border-bottom:2px solid var(--border);white-space:nowrap;}
+.results-table td{padding:9px 8px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.results-table tr:last-child td{border-bottom:none;}
+.results-table tr.dnf-row td{color:var(--muted);}
+.place-num{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;}
+.place-1{color:var(--yellow);}
+.place-2{color:#ccc;}
+.place-3{color:#cd7f32;}
+
+/* RUNNING ROW */
+.running-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:11px 13px;margin-bottom:7px;gap:8px;}
+.running-time{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--accent2);white-space:nowrap;}
+
+/* PARTICIPANT STATUS ROW (marshal view) */
+.p-row{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 13px;margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.p-num{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--accent);min-width:38px;}
+.p-name{font-size:13px;font-weight:600;flex:1;min-width:100px;}
+.p-statuses{display:flex;gap:4px;flex-wrap:wrap;}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:12px;}
+.search-wrap input{padding-left:36px;}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:22px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;}
+
+/* MISC */
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+.flex-row{display:flex;gap:8px;}
+.flex-row .form-group{flex:1;margin-bottom:0;}
+.logo-text{font-family:'Barlow Condensed',sans-serif;font-size:44px;font-weight:900;letter-spacing:4px;text-transform:uppercase;color:var(--accent);line-height:1;}
+.logo-sub{font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:6px;color:var(--muted);text-transform:uppercase;}
+.spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto;}
+@keyframes spin{to{transform:rotate(360deg);}}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* LIVE timer color */
+.live-time{color:var(--accent2);font-family:'Barlow Condensed',sans-serif;font-weight:700;}
+.missing{color:var(--red);font-size:11px;}
 </style>
 </head>
 <body>
 
-<!-- HOME -->
+<!-- ═══════════════════════════ HOME ═══════════════════════════ -->
 <div class="screen active" id="screen-home">
-  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;">
-    <div style="margin-bottom:24px;">
-      <div style="font-size:48px;margin-bottom:12px;">🏍️</div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 20px;text-align:center;">
+    <div style="margin-bottom:20px;">
+      <div style="font-size:46px;margin-bottom:10px;">🏍️</div>
       <div class="logo-text">ENDURO</div>
       <div class="logo-sub">Race System</div>
     </div>
-    <div id="home-conn" style="margin-bottom:16px;font-size:13px;"></div>
-    <div id="home-race-name" style="font-size:18px;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--accent2);margin-bottom:20px;min-height:24px;"></div>
-    <div style="width:100%;max-width:360px;">
+    <div id="home-conn" style="margin-bottom:10px;"></div>
+    <div id="home-race-name" style="font-size:17px;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--accent2);margin-bottom:18px;min-height:22px;"></div>
+    <div style="width:100%;max-width:340px;">
       <div class="role-grid">
         <div class="role-card full" onclick="goAdmin()">
           <div class="icon">💻</div>
           <div class="name">Administratorius</div>
-          <div class="desc">Registruok dalyvius · Peržiūrėk rezultatus</div>
+          <div class="desc">Registruok dalyvius · Rezultatai · Eksportas</div>
         </div>
-        <div class="role-card" onclick="pickMarshal(1)">
-          <div class="icon">🚦</div><div class="name">Teisėjas 1</div><div class="desc">GR1 Startas</div>
-        </div>
-        <div class="role-card" onclick="pickMarshal(2)">
-          <div class="icon">🏁</div><div class="name">Teisėjas 2</div><div class="desc">GR1 Finišas</div>
-        </div>
-        <div class="role-card" onclick="pickMarshal(3)">
-          <div class="icon">📸</div><div class="name">Teisėjas 3</div><div class="desc">GR1 CP taškai</div>
-        </div>
-        <div class="role-card" onclick="pickMarshal(4)">
-          <div class="icon">🚦</div><div class="name">Teisėjas 4</div><div class="desc">GR2 Startas</div>
-        </div>
-        <div class="role-card" onclick="pickMarshal(5)">
-          <div class="icon">🏁</div><div class="name">Teisėjas 5</div><div class="desc">GR2 Finišas</div>
-        </div>
-        <div class="role-card" onclick="pickMarshal(6)">
-          <div class="icon">📸</div><div class="name">Teisėjas 6</div><div class="desc">GR2 CP taškai</div>
-        </div>
+        <div class="role-card" onclick="pickMarshal(1)"><div class="icon">🚦</div><div class="name">Teisėjas 1</div><div class="desc">GR1 Startas</div></div>
+        <div class="role-card" onclick="pickMarshal(2)"><div class="icon">🏁</div><div class="name">Teisėjas 2</div><div class="desc">GR1 Finišas</div></div>
+        <div class="role-card" onclick="pickMarshal(3)"><div class="icon">📸</div><div class="name">Teisėjas 3</div><div class="desc">GR1 CP taškai</div></div>
+        <div class="role-card" onclick="pickMarshal(4)"><div class="icon">🚦</div><div class="name">Teisėjas 4</div><div class="desc">GR2 Startas</div></div>
+        <div class="role-card" onclick="pickMarshal(5)"><div class="icon">🏁</div><div class="name">Teisėjas 5</div><div class="desc">GR2 Finišas</div></div>
+        <div class="role-card" onclick="pickMarshal(6)"><div class="icon">📸</div><div class="name">Teisėjas 6</div><div class="desc">GR2 CP taškai</div></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ADMIN -->
+<!-- ═══════════════════════════ ADMIN ══════════════════════════ -->
 <div class="screen" id="screen-admin">
   <div class="header">
     <div>
@@ -153,7 +179,7 @@
       <div id="admin-sub" class="header-sub">—</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
-      <span id="admin-sync-dot"><span class="sync-dot connecting"></span></span>
+      <span id="admin-sync"><span class="sync-dot wait"></span></span>
       <button class="btn btn-ghost btn-sm" onclick="goTo('screen-home')">← Atgal</button>
     </div>
   </div>
@@ -163,57 +189,56 @@
       <button class="tab" onclick="adminTab('racers',this)">Dalyviai</button>
       <button class="tab" onclick="adminTab('results',this)">Rezultatai</button>
     </div>
+
+    <!-- SETUP -->
     <div id="admin-tab-setup">
       <div class="section-title">Lenktynių nustatymai</div>
-      <div class="form-group"><label>Lenktynių pavadinimas</label><input type="text" id="cfg-race-name" placeholder="pvz. Enduro Fiesta 2026 Pavasaris"></div>
+      <div class="form-group"><label>Lenktynių pavadinimas</label>
+        <input type="text" id="cfg-race-name" placeholder="pvz. Enduro Fiesta 2026 Pavasaris" autocomplete="off"></div>
       <div class="flex-row">
-        <div class="form-group"><label>Max CP — GR1</label><input type="number" id="cfg-cp1" placeholder="10" min="1" max="99"></div>
-        <div class="form-group"><label>Max CP — GR2</label><input type="number" id="cfg-cp2" placeholder="10" min="1" max="99"></div>
+        <div class="form-group"><label>Max CP — GR1</label>
+          <input type="number" id="cfg-cp1" placeholder="10" min="1" max="99" inputmode="numeric"></div>
+        <div class="form-group"><label>Max CP — GR2</label>
+          <input type="number" id="cfg-cp2" placeholder="10" min="1" max="99" inputmode="numeric"></div>
       </div>
       <button class="btn btn-primary" onclick="saveConfig()">💾 Išsaugoti nustatymus</button>
       <hr class="divider">
-      <div class="section-title">GR valdymas</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="card" id="gr1-card">
-          <div class="card-title">GR 1</div>
-          <div id="gr1-badge" style="margin:8px 0;"></div>
-          <button class="btn btn-sm btn-red" id="gr1-close-btn" onclick="closeGR(1)">🔒 Uždaryti GR1</button>
-        </div>
-        <div class="card" id="gr2-card">
-          <div class="card-title">GR 2</div>
-          <div id="gr2-badge" style="margin:8px 0;"></div>
-          <button class="btn btn-sm btn-red" id="gr2-close-btn" onclick="closeGR(2)">🔒 Uždaryti GR2</button>
-        </div>
-      </div>
-      <hr class="divider">
       <div class="section-title" style="color:var(--red)">⚠️ Pavojinga zona</div>
-      <button class="btn btn-ghost" onclick="resetRace()" style="border-color:var(--red);color:var(--red);">🗑️ Ištrinti visus duomenis (naujos lenktynės)</button>
+      <button class="btn btn-ghost" id="reset-btn" onclick="startReset()" style="border-color:var(--red);color:var(--red);">🗑️ Pradėti naujas lenktynes (ištrinti viską)</button>
     </div>
+
+    <!-- RACERS -->
     <div id="admin-tab-racers" style="display:none;">
       <div class="section-title">Registruoti dalyvį</div>
       <div class="flex-row">
-        <div class="form-group" style="max-width:100px;"><label>Nr.</label><input type="number" id="reg-num" placeholder="Nr." min="1" max="999"></div>
-        <div class="form-group"><label>Komanda (max 30 simbolių)</label><input type="text" id="reg-name" placeholder="Komandos pavadinimas" maxlength="30"></div>
+        <div class="form-group" style="max-width:90px;"><label>Nr.</label>
+          <input type="number" id="reg-num" placeholder="Nr." min="1" max="999" inputmode="numeric" autocomplete="off" autocorrect="off"></div>
+        <div class="form-group"><label>Komanda (max 30 sim.)</label>
+          <input type="text" id="reg-name" placeholder="Komandos pavadinimas" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="off"></div>
       </div>
       <div class="form-group"><label>Klasė</label>
-        <select id="reg-class"><option value="SOFT">Soft Enduro</option><option value="HARD">Hard Enduro</option></select>
-      </div>
+        <select id="reg-class"><option value="SOFT">Soft Enduro</option><option value="HARD">Hard Enduro</option></select></div>
       <button class="btn btn-primary" onclick="addRacer()">➕ Registruoti dalyvį</button>
       <hr class="divider">
       <div class="section-title">Dalyvių sąrašas (<span id="racer-count">0</span>)</div>
       <div id="racer-list"></div>
     </div>
+
+    <!-- RESULTS -->
     <div id="admin-tab-results" style="display:none;">
       <div class="tabs">
         <button class="tab active" id="res-tab-soft" onclick="resultsTab('SOFT',this)">Soft Enduro</button>
         <button class="tab" id="res-tab-hard" onclick="resultsTab('HARD',this)">Hard Enduro</button>
+      </div>
+      <div style="margin-bottom:12px;">
+        <button class="btn btn-ghost btn-sm" onclick="exportExcel()" style="width:auto;border-color:var(--green);color:var(--green);">📊 Eksportuoti į Excel</button>
       </div>
       <div id="results-content"></div>
     </div>
   </div>
 </div>
 
-<!-- MARSHAL -->
+<!-- ═══════════════════════════ MARSHAL ════════════════════════ -->
 <div class="screen" id="screen-marshal">
   <div class="header">
     <div>
@@ -221,33 +246,33 @@
       <div id="marshal-sub" class="header-sub">—</div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <span id="marshal-sync"><span class="sync-dot connecting"></span></span>
+      <span id="marshal-sync"><span class="sync-dot wait"></span></span>
       <button class="btn btn-ghost btn-sm" onclick="goTo('screen-home')">← Atgal</button>
     </div>
   </div>
-  <!-- Static input area — never re-rendered -->
-  <div class="content" id="marshal-input-area" style="padding-bottom:0;"></div>
-  <!-- Dynamic stats area — safe to re-render -->
-  <div class="content" id="marshal-stats-area" style="padding-top:8px;"></div>
+  <!-- Static input area — NEVER re-rendered -->
+  <div class="content" id="marshal-input-area" style="padding-bottom:4px;"></div>
+  <!-- Dynamic stats + participant list — safe to update -->
+  <div class="content" id="marshal-stats-area" style="padding-top:4px;"></div>
 </div>
 
-<!-- MODAL EDIT -->
+<!-- MODAL: EDIT -->
 <div class="modal-overlay" id="modal-edit">
   <div class="modal">
     <div class="modal-title">✏️ Redaguoti</div>
     <div id="modal-edit-content"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;">
       <button class="btn btn-ghost" onclick="closeModal('modal-edit')">Atšaukti</button>
       <button class="btn btn-primary" onclick="saveEdit()">Išsaugoti</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL CONFIRM -->
+<!-- MODAL: CONFIRM -->
 <div class="modal-overlay" id="modal-confirm">
   <div class="modal">
     <div class="modal-title" id="confirm-title">Patvirtinti?</div>
-    <div id="confirm-body" style="color:var(--muted);margin-bottom:20px;font-size:15px;"></div>
+    <div id="confirm-body" style="color:var(--muted);margin-bottom:18px;font-size:15px;line-height:1.5;"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
       <button class="btn btn-ghost" onclick="closeModal('modal-confirm')">Atšaukti</button>
       <button class="btn btn-red" id="confirm-ok">Patvirtinti</button>
@@ -255,13 +280,49 @@
   </div>
 </div>
 
-<script type="module">
-// ─── FIREBASE ────────────────────────────────────────────────
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, update, remove }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+<!-- MODAL: RESET (multi-step) -->
+<div class="modal-overlay" id="modal-reset">
+  <div class="modal">
+    <div class="modal-title" style="color:var(--red);">⚠️ Ištrinti viską?</div>
+    <div id="reset-step1">
+      <div style="color:var(--muted);margin-bottom:16px;line-height:1.6;font-size:14px;">
+        Šis veiksmas <strong style="color:var(--red)">negrįžtamai</strong> ištrins:<br>
+        • Visus registruotus dalyvius<br>
+        • Visus starto/finišo laikus<br>
+        • Visus CP duomenis<br>
+        • Visus rezultatus
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeModal('modal-reset')">Atšaukti</button>
+        <button class="btn btn-red" onclick="resetStep2()">Toliau →</button>
+      </div>
+    </div>
+    <div id="reset-step2" style="display:none;">
+      <div style="color:var(--yellow);margin-bottom:16px;font-size:14px;">Ar tikrai? Tai paskutinis perspėjimas. Duomenų atkurti nebus galima.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeModal('modal-reset')">Atšaukti</button>
+        <button class="btn btn-red" onclick="resetStep3()">Taip, toliau →</button>
+      </div>
+    </div>
+    <div id="reset-step3" style="display:none;">
+      <div style="color:var(--muted);margin-bottom:10px;font-size:14px;">Įveskite <strong style="color:var(--red)">RESET</strong> ir paspauskite mygtuką:</div>
+      <div class="form-group">
+        <input type="text" id="reset-confirm-input" placeholder="Įveskite RESET" autocomplete="off" autocorrect="off" autocapitalize="characters" style="font-size:20px;text-align:center;letter-spacing:4px;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeModal('modal-reset')">Atšaukti</button>
+        <button class="btn btn-red" onclick="doReset()">🗑️ IŠTRINTI VISKĄ</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-const firebaseConfig = {
+<!-- Firebase compat SDK (classic scripts — works on iOS Safari, file:// and all hostings) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+// ── Firebase config ──────────────────────────────────────────
+var firebaseConfig = {
   apiKey: "AIzaSyAOGOZoadrdfEYEGFXfUwcyu9XZbMPzi7s",
   authDomain: "enduro-fiesta-2026-pavasaris.firebaseapp.com",
   databaseURL: "https://enduro-fiesta-2026-pavasaris-default-rtdb.europe-west1.firebasedatabase.app",
@@ -270,308 +331,319 @@ const firebaseConfig = {
   messagingSenderId: "934492934528",
   appId: "1:934492934528:web:78ec5dd5fc98fdc8c73165"
 };
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
+var R  = 'race';
 
-const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
-const ROOT = 'race';
+// ── Local state mirror ───────────────────────────────────────
+let S = { config:{raceName:'',cp1:10,cp2:10}, racers:{}, times:{}, gr1Closed:false, gr2Closed:false };
+let currentRole = null, currentGR = null;
+let editData = {}, activeResClass = 'SOFT';
+let marshalInputBuilt = false, marshalRefreshTimer = null;
+let connected = false, btnLocked = false;
 
-// ─── STATE (local mirror of Firebase) ────────────────────────
-let state = {
-  config: { raceName:'', cp1:10, cp2:10 },
-  racers: {},
-  times:  {},
-  gr1Closed: false,
-  gr2Closed: false
-};
+// ── Firebase helpers (compat API) ─────────────────────────────
+function fbRef(path){ return db.ref(R + '/' + path); }
+function fbSet(path,v){ return db.ref(R + '/' + path).set(v); }
+function fbUpd(path,v){ return db.ref(R + '/' + path).update(v); }
+function fbDel(path){ return db.ref(R + '/' + path).remove(); }
 
-let currentRole = null;
-let currentGR   = null;
-let editData    = {};
-let activeResClass = 'SOFT';
-let marshalRenderInterval = null;
-let connected = false;
-
-// ─── FIREBASE HELPERS ─────────────────────────────────────────
-function dbRef(path) { return ref(db, `${ROOT}/${path}`); }
-
-async function dbSet(path, val) {
-  await set(dbRef(path), val);
-}
-async function dbUpdate(path, val) {
-  await update(ref(db, `${ROOT}/${path}`), val);
-}
-async function dbRemove(path) {
-  await remove(dbRef(path));
-}
-
-// Subscribe to entire state once, then live
-onValue(ref(db, ROOT), snap => {
-  const data = snap.val() || {};
-  state.config    = data.config    || { raceName:'', cp1:10, cp2:10 };
-  state.racers    = data.racers    || {};
-  state.times     = data.times     || {};
-  state.gr1Closed = data.gr1Closed || false;
-  state.gr2Closed = data.gr2Closed || false;
-  connected = true;
-  updateConnUI(true);
-  refreshCurrentScreen();
-  updateHomeRaceName();
-}, err => {
-  connected = false;
-  updateConnUI(false);
-  console.error(err);
+// ── Realtime listener ────────────────────────────────────────
+db.ref('.info/connected').on('value', function(snap){
+  connected = snap.val() === true;
+  updateConnUI(connected);
 });
 
+db.ref(R).on('value', function(snap){
+  var d = snap.val() || {};
+  S.config    = d.config    || {raceName:'',cp1:10,cp2:10};
+  S.racers    = d.racers    || {};
+  S.times     = d.times     || {};
+  S.gr1Closed = d.gr1Closed || false;
+  S.gr2Closed = d.gr2Closed || false;
+  updateHomeRaceName();
+  refreshCurrentScreen();
+}, function(err){ console.error(err); });
+
 function updateConnUI(ok) {
-  const cls = ok ? '' : 'off';
   document.querySelectorAll('.sync-dot').forEach(d => {
     d.className = 'sync-dot' + (ok ? '' : ' off');
   });
   const hc = document.getElementById('home-conn');
   if (hc) hc.innerHTML = ok
-    ? '<span class="badge badge-green">🟢 Prisijungta prie Firebase</span>'
-    : '<span class="badge badge-red">🔴 Nėra ryšio</span>';
+    ? '<span class="badge badge-green">🟢 Firebase ryšys aktyvus</span>'
+    : '<span class="badge badge-red">🔴 Nėra ryšio — duomenys bus sinchronizuoti grįžus</span>';
 }
 
-// ─── NAVIGATION ───────────────────────────────────────────────
+function updateHomeRaceName() {
+  const el = document.getElementById('home-race-name');
+  if (el) el.textContent = S.config.raceName || '';
+}
+
+// ── Navigation ───────────────────────────────────────────────
 function goTo(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if (id === 'screen-home') stopMarshalInterval();
+  if (id==='screen-home') stopMarshalRefresh();
 }
 window.goTo = goTo;
 
 function goAdmin() {
   goTo('screen-admin');
-  document.getElementById('admin-sub').textContent = state.config.raceName || '—';
+  document.getElementById('admin-sub').textContent = S.config.raceName||'—';
   renderSetup();
 }
 window.goAdmin = goAdmin;
 
-function updateHomeRaceName() {
-  const el = document.getElementById('home-race-name');
-  if (el) el.textContent = state.config.raceName || '';
-}
-
 function refreshCurrentScreen() {
   const active = document.querySelector('.screen.active');
   if (!active) return;
-  if (active.id === 'screen-admin') {
-    document.getElementById('admin-sub').textContent = state.config.raceName || '—';
-    const visSetup   = document.getElementById('admin-tab-setup').style.display   !== 'none';
-    const visRacers  = document.getElementById('admin-tab-racers').style.display  !== 'none';
-    const visResults = document.getElementById('admin-tab-results').style.display !== 'none';
-    if (visSetup)   renderSetup();
-    if (visRacers)  renderRacerList();
-    if (visResults) renderResults(activeResClass);
+  if (active.id==='screen-admin') {
+    document.getElementById('admin-sub').textContent = S.config.raceName||'—';
+    if (document.getElementById('admin-tab-setup').style.display!=='none')   renderSetup();
+    if (document.getElementById('admin-tab-racers').style.display!=='none')  renderRacerList();
+    if (document.getElementById('admin-tab-results').style.display!=='none') renderResults(activeResClass);
   }
-  if (active.id === 'screen-marshal') updateMarshalStats(currentRole, currentGR, currentGR===1?state.gr1Closed:state.gr2Closed);
+  if (active.id==='screen-marshal') {
+    updateClosedAlert();
+    updateMarshalStats();
+  }
 }
 
-// ─── MARSHAL ──────────────────────────────────────────────────
+// ── WakeLock ─────────────────────────────────────────────────
+let wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch(e) {}
+}
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState==='visible' && currentRole) requestWakeLock();
+});
+
+// ── Marshal ──────────────────────────────────────────────────
 function pickMarshal(num) {
   currentRole = num;
-  currentGR   = num <= 3 ? 1 : 2;
+  currentGR   = num<=3 ? 1 : 2;
   marshalInputBuilt = false;
   document.getElementById('marshal-input-area').innerHTML = '';
   document.getElementById('marshal-stats-area').innerHTML = '<div class="spinner"></div>';
   document.getElementById('marshal-title').textContent = `Teisėjas ${num} · GR${currentGR}`;
-  document.getElementById('marshal-sub').textContent   = state.config.raceName || '—';
+  document.getElementById('marshal-sub').textContent   = S.config.raceName||'—';
   goTo('screen-marshal');
-  renderMarshal();
-  startMarshalInterval();
+  requestWakeLock();
+  buildMarshalInput();
+  updateMarshalStats();
+  startMarshalRefresh();
 }
 window.pickMarshal = pickMarshal;
 
-function startMarshalInterval() {
-  stopMarshalInterval();
-  marshalRenderInterval = setInterval(renderMarshal, 3000);
+function startMarshalRefresh() {
+  stopMarshalRefresh();
+  marshalRefreshTimer = setInterval(updateMarshalStats, 2000);
 }
-function stopMarshalInterval() {
-  if (marshalRenderInterval) { clearInterval(marshalRenderInterval); marshalRenderInterval = null; }
-}
-
-// ── renderMarshal: only rebuilds stats, never touches inputs ──
-let marshalInputBuilt = false;
-
-function renderMarshal() {
-  const gr       = currentGR;
-  const role     = currentRole;
-  const grClosed = gr === 1 ? state.gr1Closed : state.gr2Closed;
-
-  // Build input area ONCE (first render or role change)
-  if (!marshalInputBuilt) {
-    buildMarshalInput(role, gr, grClosed);
-    marshalInputBuilt = true;
-  } else {
-    // Only update closed alert if GR just got closed
-    updateClosedAlert(gr, grClosed);
-  }
-
-  // Always update stats area freely — no inputs here
-  updateMarshalStats(role, gr, grClosed);
+function stopMarshalRefresh() {
+  if (marshalRefreshTimer) { clearInterval(marshalRefreshTimer); marshalRefreshTimer=null; }
 }
 
-function buildMarshalInput(role, gr, grClosed) {
+function buildMarshalInput() {
+  if (marshalInputBuilt) return;
+  marshalInputBuilt = true;
   const area = document.getElementById('marshal-input-area');
-  if (!area) return;
+  const gr   = currentGR, role = currentRole;
+  const closed = gr===1 ? S.gr1Closed : S.gr2Closed;
 
-  if (role === 1 || role === 4) {
-    area.innerHTML = grClosed
-      ? `<div class="alert alert-err" id="gr-closed-alert">🔒 GR${gr} uždarytas. Naujų startų negalima.</div>`
-      : `<div id="gr-closed-alert" style="display:none"></div>
-         <div class="section-title">Registruoti startą · GR${gr}</div>
-         <div class="form-group">
-           <label>Dalyvio numeris</label>
-           <input type="number" id="m-num" placeholder="Įveskite numerį" min="1"
-             style="font-size:32px;text-align:center;padding:20px;" inputmode="numeric">
-         </div>
-         <button class="btn btn-green btn-big" onclick="window.regStart(${gr})">🚦 STARTAS</button>
-         <hr class="divider">`;
-  } else if (role === 2 || role === 5) {
-    area.innerHTML = grClosed
-      ? `<div class="alert alert-err" id="gr-closed-alert">🔒 GR${gr} uždarytas.</div>`
-      : `<div id="gr-closed-alert" style="display:none"></div>
-         <div class="section-title">Fiksuoti finišą · GR${gr}</div>
-         <div class="form-group">
-           <label>Dalyvio numeris</label>
-           <input type="number" id="m-num" placeholder="Įveskite numerį" min="1"
-             style="font-size:32px;text-align:center;padding:20px;" inputmode="numeric">
-         </div>
-         <button class="btn btn-primary btn-big" onclick="window.regFinish(${gr})">🏁 FINIŠAS</button>
-         <hr class="divider">`;
-  } else if (role === 3 || role === 6) {
-    const maxCP = gr === 1 ? (state.config.cp1||10) : (state.config.cp2||10);
-    area.innerHTML = grClosed
-      ? `<div class="alert alert-err" id="gr-closed-alert">🔒 GR${gr} uždarytas.</div>`
-      : `<div id="gr-closed-alert" style="display:none"></div>
-         <div class="section-title">Registruoti CP · GR${gr}</div>
-         <div class="alert alert-warn">⚠️ Max CP šiame GR: <strong>${maxCP}</strong></div>
-         <div class="cp-input-row">
-           <div class="form-group"><label>Dalyvio nr.</label>
-             <input type="number" id="cp-num" placeholder="Nr." min="1" inputmode="numeric"
-               style="font-size:24px;text-align:center;padding:16px;"></div>
-           <div class="form-group"><label>CP kiekis</label>
-             <input type="number" id="cp-val" placeholder="0" min="0" max="${maxCP}" inputmode="numeric"
-               style="font-size:24px;text-align:center;padding:16px;"></div>
-         </div>
-         <button class="btn btn-yellow btn-big" onclick="window.regCP(${gr},${maxCP})">📸 ĮRAŠYTI CP</button>
-         <hr class="divider">`;
+  if (role===1||role===4) {
+    area.innerHTML = `
+      <div id="gr-closed-alert" class="alert alert-err" style="${closed?'':'display:none'}">🔒 GR${gr} uždarytas. Naujų startų negalima.</div>
+      <div id="gr-input-wrap" style="${closed?'display:none':''}">
+        <div class="section-title">Registruoti startą · GR${gr}</div>
+        <div class="form-group">
+          <label>Dalyvio numeris</label>
+          <input type="number" id="m-num" placeholder="Įveskite numerį" min="1" inputmode="numeric"
+            autocomplete="off" autocorrect="off" style="font-size:32px;text-align:center;padding:20px;">
+        </div>
+        <button class="btn btn-green btn-action" id="m-action-btn" onclick="window.regStart(${gr})">🚦 STARTAS</button>
+      </div>
+      <hr class="divider">`;
+  } else if (role===2||role===5) {
+    area.innerHTML = `
+      <div id="gr-closed-alert" class="alert alert-err" style="${closed?'':'display:none'}">🔒 GR${gr} uždarytas.</div>
+      <div id="gr-input-wrap" style="${closed?'display:none':''}">
+        <div class="section-title">Fiksuoti finišą · GR${gr}</div>
+        <div class="form-group">
+          <label>Dalyvio numeris</label>
+          <input type="number" id="m-num" placeholder="Įveskite numerį" min="1" inputmode="numeric"
+            autocomplete="off" autocorrect="off" style="font-size:32px;text-align:center;padding:20px;">
+        </div>
+        <button class="btn btn-primary btn-action" id="m-action-btn" onclick="window.regFinish(${gr})">🏁 FINIŠAS</button>
+      </div>
+      <hr class="divider">`;
+  } else if (role===3||role===6) {
+    const maxCP = gr===1?(S.config.cp1||10):(S.config.cp2||10);
+    area.innerHTML = `
+      <div id="gr-closed-alert" class="alert alert-err" style="${closed?'':'display:none'}">🔒 GR${gr} uždarytas.</div>
+      <div id="gr-input-wrap" style="${closed?'display:none':''}">
+        <div class="section-title">Registruoti CP · GR${gr}</div>
+        <div class="alert alert-warn">⚠️ Max CP šiame GR: <strong id="max-cp-display">${maxCP}</strong></div>
+        <div class="flex-row" style="margin-bottom:12px;">
+          <div class="form-group">
+            <label>Dalyvio nr.</label>
+            <input type="number" id="cp-num" placeholder="Nr." min="1" inputmode="numeric"
+              autocomplete="off" autocorrect="off" style="font-size:24px;text-align:center;padding:16px;">
+          </div>
+          <div class="form-group">
+            <label>CP kiekis</label>
+            <input type="number" id="cp-val" placeholder="0" min="0" max="${maxCP}" inputmode="numeric"
+              autocomplete="off" style="font-size:24px;text-align:center;padding:16px;">
+          </div>
+        </div>
+        <button class="btn btn-yellow btn-action" id="m-action-btn" onclick="window.regCP(${gr},${maxCP})">📸 ĮRAŠYTI CP</button>
+      </div>
+      <hr class="divider">`;
   }
 }
 
-function updateClosedAlert(gr, grClosed) {
-  const alert = document.getElementById('gr-closed-alert');
-  if (!alert) return;
-  if (grClosed) {
-    alert.style.display = '';
-    alert.className = 'alert alert-err';
-    alert.textContent = `🔒 GR${gr} uždarytas.`;
-    // Hide all inputs/buttons in input area when closed
-    document.querySelectorAll('#marshal-input-area input, #marshal-input-area button.btn-big').forEach(el => {
-      el.style.display = 'none';
-    });
-  }
+function updateClosedAlert() {
+  const gr = currentGR;
+  if (!gr) return;
+  const closed = gr===1 ? S.gr1Closed : S.gr2Closed;
+  const alertEl = document.getElementById('gr-closed-alert');
+  const wrapEl  = document.getElementById('gr-input-wrap');
+  if (alertEl) alertEl.style.display = closed ? '' : 'none';
+  if (wrapEl)  wrapEl.style.display  = closed ? 'none' : '';
 }
 
-function updateMarshalStats(role, gr, grClosed) {
+function updateMarshalStats() {
   const stats = document.getElementById('marshal-stats-area');
-  if (!stats) return;
-  const allKeys  = Object.keys(state.times).filter(k => k.endsWith(`_${gr}`));
-  const running  = allKeys.filter(k => state.times[k].start != null && state.times[k].finish == null);
-  const finished = allKeys.filter(k => state.times[k].finish != null);
-  const now      = Date.now() / 1000;
+  if (!stats||!currentRole) return;
+  const gr   = currentGR;
+  const role = currentRole;
+  const now  = Date.now()/1000;
+  const maxCP = gr===1?(S.config.cp1||10):(S.config.cp2||10);
+
+  const allRacers = Object.values(S.racers).sort((a,b)=>+a.num-+b.num);
+  const grKeys    = Object.keys(S.times).filter(k=>k.endsWith(`_${gr}`));
+  const running   = grKeys.filter(k=>S.times[k].start!=null&&S.times[k].finish==null);
+  const finished  = grKeys.filter(k=>S.times[k].finish!=null);
+
+  // Search filter
+  const searchEl = document.getElementById('marshal-search');
+  const filter   = searchEl ? searchEl.value.toLowerCase() : '';
+
   let h = '';
 
-  if (role === 1 || role === 4) {
-    h += statsRow(allKeys.length, running.length, finished.length);
-    h += classCountsHtml(gr);
-    if (running.length) {
-      h += `<div class="section-title">⏱️ Bėga (${running.length})</div>`;
-      running.sort((a,b) => state.times[a].start - state.times[b].start).forEach(k => {
-        const num = k.split('_')[0];
-        const sec = Math.floor(now - state.times[k].start);
-        h += runningRow(num, state.racers[num]?.name || '?', sec);
-      });
-    }
+  // Quick stats bar
+  h += `<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+    <span class="badge badge-gray">Iš viso: ${allRacers.length}</span>
+    <span class="badge badge-orange">Startavo: ${grKeys.filter(k=>S.times[k].start!=null).length}</span>
+    <span class="badge badge-yellow">Bėga: ${running.length}</span>
+    <span class="badge badge-green">Finišavo: ${finished.length}</span>
+    <span class="badge badge-blue">Soft: ${allRacers.filter(r=>r.class==='SOFT').length}</span>
+    <span class="badge badge-red" style="border-color:var(--hard)">Hard: ${allRacers.filter(r=>r.class==='HARD').length}</span>
+  </div>`;
 
-  } else if (role === 2 || role === 5) {
-    h += `<div class="stats-row">
-      <div class="stat-box"><div class="stat-num" style="color:var(--yellow)">${running.length}</div><div class="stat-label">Dar bėga</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--green)">${finished.length}</div><div class="stat-label">Finišavo</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--accent2)">${allKeys.length}</div><div class="stat-label">Startavo</div></div>
-    </div>`;
-    h += classCountsHtml(gr);
-    if (running.length) {
-      h += `<div class="section-title">⏳ Laukia finišo (${running.length})</div>`;
-      running.sort((a,b) => state.times[a].start - state.times[b].start).forEach(k => {
-        const num = k.split('_')[0];
-        const sec = Math.floor(now - state.times[k].start);
-        h += runningRow(num, state.racers[num]?.name || '?', sec);
-      });
-    }
+  // Search box (preserved across re-renders by value injection)
+  h += `<div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="marshal-search" placeholder="Ieškoti pagal numerį arba pavadinimą..."
+      value="${filter}" oninput="window.marshalSearch()" autocomplete="off" autocorrect="off" autocapitalize="off"
+      style="padding-left:36px;">
+  </div>`;
 
-  } else if (role === 3 || role === 6) {
-    const maxCP  = gr === 1 ? (state.config.cp1||10) : (state.config.cp2||10);
-    const withCP = allKeys.filter(k => state.times[k].cp != null);
-    const needCP = allKeys.filter(k => state.times[k].finish != null && state.times[k].cp == null);
-    h += `<div class="stats-row">
-      <div class="stat-box"><div class="stat-num" style="color:var(--green)">${withCP.length}</div><div class="stat-label">Su CP</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--yellow)">${needCP.length}</div><div class="stat-label">Laukia CP</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--accent2)">${maxCP}</div><div class="stat-label">Max CP</div></div>
-    </div>`;
-    h += classCountsHtml(gr);
-    if (needCP.length) {
-      h += `<div class="section-title">⚠️ Finišavo – laukia CP (${needCP.length})</div>`;
-      needCP.forEach(k => {
-        const num = k.split('_')[0];
-        h += `<div class="running-row" style="border-color:var(--yellow)">
-          <div><div style="font-family:'Barlow Condensed';font-size:24px;font-weight:900;color:var(--accent)">#${num}</div>
-          <div style="font-size:12px;color:var(--muted)">${state.racers[num]?.name||'?'}</div></div>
-          <span class="badge badge-yellow">CP laukia</span></div>`;
-      });
-    }
-    if (withCP.length) {
-      h += `<div class="section-title">✅ Įrašyti CP (${withCP.length})</div>`;
-      withCP.sort((a,b)=>+a.split('_')[0]-+b.split('_')[0]).forEach(k => {
-        const num = k.split('_')[0];
-        const cp  = state.times[k].cp;
-        h += `<div class="running-row">
-          <div><div style="font-family:'Barlow Condensed';font-size:24px;font-weight:900;color:var(--accent)">#${num}</div>
-          <div style="font-size:12px;color:var(--muted)">${state.racers[num]?.name||'?'}</div></div>
-          <span class="badge ${cp>=maxCP?'badge-green':'badge-red'}">${cp}/${maxCP}</span></div>`;
-      });
-    }
+  // Participant list
+  h += `<div class="section-title">Visi dalyviai</div>`;
+
+  const filtered = allRacers.filter(r =>
+    !filter || r.num.toString().includes(filter) || r.name.toLowerCase().includes(filter)
+  );
+
+  if (!filtered.length) {
+    h += `<div style="text-align:center;color:var(--muted);padding:20px;">Nerasta</div>`;
+  } else {
+    filtered.forEach(r => {
+      const t = S.times[`${r.num}_${gr}`] || {};
+      const hasStart  = t.start  != null;
+      const hasFinish = t.finish != null;
+      const hasCP     = t.cp     != null;
+
+      // Elapsed time
+      let timeDisplay = '';
+      if (hasStart && hasFinish) {
+        timeDisplay = `<span class="badge badge-green">${formatTime(Math.round(t.finish-t.start))}</span>`;
+      } else if (hasStart && !hasFinish) {
+        const elapsed = Math.floor(now - t.start);
+        timeDisplay = `<span class="badge badge-yellow live-time">⏱ ${formatTime(elapsed)}</span>`;
+      }
+
+      // Status badges
+      let statuses = '';
+      statuses += hasStart
+        ? `<span class="badge badge-green">S✓</span>`
+        : `<span class="badge badge-gray">S✗</span>`;
+      statuses += hasFinish
+        ? `<span class="badge badge-green">F✓</span>`
+        : (hasStart ? `<span class="badge badge-yellow">F⏳</span>` : `<span class="badge badge-gray">F✗</span>`);
+
+      if (role===3||role===6) {
+        statuses += hasCP
+          ? `<span class="badge ${t.cp>=maxCP?'badge-green':'badge-red'}">CP ${t.cp}/${maxCP}</span>`
+          : `<span class="badge badge-gray">CP✗</span>`;
+      }
+
+      h += `<div class="p-row">
+        <div class="p-num">${r.num}</div>
+        <div class="p-name">
+          ${r.name}
+          <div style="margin-top:2px;"><span class="racer-class ${r.class==='SOFT'?'class-soft':'class-hard'}">${r.class}</span></div>
+        </div>
+        <div class="p-statuses">${statuses}</div>
+        ${timeDisplay ? `<div>${timeDisplay}</div>` : ''}
+      </div>`;
+    });
   }
+
   stats.innerHTML = h;
 }
 
+window.marshalSearch = function() { updateMarshalStats(); };
+
+// Lock button helper
+function lockBtn(ms=1500) {
+  const btn = document.getElementById('m-action-btn');
+  if (btn) { btn.disabled=true; setTimeout(()=>{ if(btn) btn.disabled=false; }, ms); }
+}
+
+// ── Marshal actions ───────────────────────────────────────────
 window.regStart = async function(gr) {
   const inp = document.getElementById('m-num');
-  const num = (inp?.value || '').trim();
-  if (!num) { alert('Įveskite numerį!'); return; }
-  if (!state.racers[num] && !confirm(`Dalyvis #${num} neregistruotas. Vis tiek fiksuoti startą?`)) return;
+  const num = (inp?.value||'').trim();
+  if (!num) { showToast('⚠️ Įveskite dalyvio numerį!', 'warn'); return; }
+  if (!S.racers[num]) { showToast(`❌ Dalyvis #${num} neregistruotas!`, 'err'); inp.value=''; inp.focus(); return; }
   const key = `${num}_${gr}`;
-  if (state.times[key]?.start != null && !confirm(`#${num} jau turi startą GR${gr}. Perrašyti?`)) return;
-  if (inp) inp.value = '';
-  inp?.focus();
-  await dbUpdate(`times/${key}`, { start: Date.now()/1000 });
-  showToast(`🚦 #${num} — Startas GR${gr}!`);
+  if (S.times[key]?.start!=null) { showToast(`⚠️ #${num} jau turi startą GR${gr}!`, 'warn'); inp.value=''; inp.focus(); return; }
+  lockBtn();
+  inp.value=''; inp.focus();
+  await fbUpd(`times/${key}`, { start: Date.now()/1000 });
+  showToast(`🚦 #${num} ${S.racers[num].name} — Startas GR${gr}!`);
 };
 
 window.regFinish = async function(gr) {
   const inp = document.getElementById('m-num');
-  const num = (inp?.value || '').trim();
-  if (!num) { alert('Įveskite numerį!'); return; }
+  const num = (inp?.value||'').trim();
+  if (!num) { showToast('⚠️ Įveskite dalyvio numerį!', 'warn'); return; }
+  if (!S.racers[num]) { showToast(`❌ Dalyvis #${num} neregistruotas!`, 'err'); inp.value=''; inp.focus(); return; }
   const key = `${num}_${gr}`;
-  if (!state.times[key]?.start && !confirm(`#${num} neturi starto. Vis tiek fiksuoti finišą?`)) return;
-  if (state.times[key]?.finish != null && !confirm(`#${num} jau turi finišą GR${gr}. Perrašyti?`)) return;
+  if (!S.times[key]?.start) { showToast(`⚠️ #${num} neturi starto GR${gr}!`, 'warn'); inp.value=''; inp.focus(); return; }
+  if (S.times[key]?.finish!=null) { showToast(`⚠️ #${num} jau turi finišą GR${gr}!`, 'warn'); inp.value=''; inp.focus(); return; }
+  lockBtn();
   const finishTime = Date.now()/1000;
-  if (inp) inp.value = '';
-  inp?.focus();
-  await dbUpdate(`times/${key}`, { finish: finishTime });
-  const elapsed = state.times[key]?.start ? Math.round(finishTime - state.times[key].start) : 0;
-  showToast(`🏁 #${num} — Finišas GR${gr}! ${formatTime(elapsed)}`);
+  inp.value=''; inp.focus();
+  await fbUpd(`times/${key}`, { finish: finishTime });
+  const elapsed = Math.round(finishTime - S.times[key].start);
+  showToast(`🏁 #${num} ${S.racers[num].name} — Finišas! ${formatTime(elapsed)}`);
 };
 
 window.regCP = async function(gr, maxCP) {
@@ -579,90 +651,84 @@ window.regCP = async function(gr, maxCP) {
   const cpInp  = document.getElementById('cp-val');
   const num    = (numInp?.value||'').trim();
   const cpVal  = cpInp?.value;
-  if (!num || cpVal === '') { alert('Įveskite numerį ir CP kiekį!'); return; }
+  if (!num) { showToast('⚠️ Įveskite dalyvio numerį!', 'warn'); return; }
+  if (!S.racers[num]) { showToast(`❌ Dalyvis #${num} neregistruotas!`, 'err'); numInp.value=''; numInp.focus(); return; }
+  if (cpVal==='') { showToast('⚠️ Įveskite CP kiekį!', 'warn'); return; }
   const cp = parseInt(cpVal);
-  if (isNaN(cp) || cp < 0 || cp > maxCP) { alert(`CP turi būti 0–${maxCP}!`); return; }
-  if (numInp) numInp.value = '';
-  if (cpInp)  cpInp.value  = '';
-  numInp?.focus();
-  await dbUpdate(`times/${num}_${gr}`, { cp });
+  if (isNaN(cp)||cp<0||cp>maxCP) { showToast(`⚠️ CP turi būti 0–${maxCP}!`, 'warn'); return; }
+  lockBtn();
+  numInp.value=''; cpInp.value=''; numInp.focus();
+  await fbUpd(`times/${num}_${gr}`, { cp });
   showToast(`${cp>=maxCP?'✅':'⚠️'} #${num} — ${cp}/${maxCP} CP GR${gr}`);
 };
 
-// ─── ADMIN – SETUP ────────────────────────────────────────────
+// ── Admin: Setup ─────────────────────────────────────────────
 function renderSetup() {
-  document.getElementById('cfg-race-name').value = state.config.raceName || '';
-  document.getElementById('cfg-cp1').value        = state.config.cp1 || 10;
-  document.getElementById('cfg-cp2').value        = state.config.cp2 || 10;
-  [1,2].forEach(g => {
-    const closed = g===1 ? state.gr1Closed : state.gr2Closed;
-    document.getElementById(`gr${g}-badge`).innerHTML = closed
-      ? '<span class="badge badge-red">🔒 Uždarytas</span>'
-      : '<span class="badge badge-green">🟢 Atviras</span>';
-    const btn = document.getElementById(`gr${g}-close-btn`);
-    btn.disabled   = closed;
-    btn.textContent = closed ? '✓ Uždarytas' : `🔒 Uždaryti GR${g}`;
-  });
+  document.getElementById('cfg-race-name').value = S.config.raceName||'';
+  document.getElementById('cfg-cp1').value        = S.config.cp1||10;
+  document.getElementById('cfg-cp2').value        = S.config.cp2||10;
 }
 
 window.saveConfig = async function() {
   const name = document.getElementById('cfg-race-name').value.trim();
-  const cp1  = parseInt(document.getElementById('cfg-cp1').value) || 10;
-  const cp2  = parseInt(document.getElementById('cfg-cp2').value) || 10;
+  const cp1  = parseInt(document.getElementById('cfg-cp1').value)||10;
+  const cp2  = parseInt(document.getElementById('cfg-cp2').value)||10;
   if (!name) { alert('Įveskite lenktynių pavadinimą!'); return; }
-  await dbSet('config', { raceName: name, cp1, cp2 });
+  await fbSet('config', { raceName:name, cp1, cp2 });
   showToast('✅ Nustatymai išsaugoti');
 };
 
-window.closeGR = function(num) {
-  showConfirm(`Uždaryti GR${num}?`,
-    `Uždarius GR${num}, nauji rezultatai nebebus priimami. Neatšaukiamas veiksmas.`,
-    async () => {
-      await dbSet(num===1 ? 'gr1Closed' : 'gr2Closed', true);
-      showToast(`🔒 GR${num} uždarytas`);
-    });
+// ── Reset (multi-step) ───────────────────────────────────────
+window.startReset = function() {
+  document.getElementById('reset-step1').style.display='';
+  document.getElementById('reset-step2').style.display='none';
+  document.getElementById('reset-step3').style.display='none';
+  document.getElementById('reset-confirm-input').value='';
+  document.getElementById('modal-reset').classList.add('open');
+};
+window.resetStep2 = function() {
+  document.getElementById('reset-step1').style.display='none';
+  document.getElementById('reset-step2').style.display='';
+};
+window.resetStep3 = function() {
+  document.getElementById('reset-step2').style.display='none';
+  document.getElementById('reset-step3').style.display='';
+  setTimeout(()=>document.getElementById('reset-confirm-input').focus(), 100);
+};
+window.doReset = async function() {
+  const val = document.getElementById('reset-confirm-input').value.trim().toUpperCase();
+  if (val!=='RESET') { showToast('⚠️ Įveskite RESET!', 'warn'); return; }
+  await db.ref(R).set({ config: S.config, racers:null, times:null, gr1Closed:false, gr2Closed:false });
+  closeModal('modal-reset');
+  showToast('🗑️ Duomenys ištrinti');
 };
 
-window.resetRace = function() {
-  showConfirm('⚠️ Ištrinti VISKĄ?',
-    'Visi dalyviai, laikai ir rezultatai bus negrįžtamai ištrinti!',
-    async () => {
-      await set(ref(db, ROOT), {
-        config: { raceName:'', cp1:10, cp2:10 },
-        racers: null, times: null,
-        gr1Closed: false, gr2Closed: false
-      });
-      showToast('🗑️ Duomenys ištrinti');
-    });
-};
-
-// ─── ADMIN – RACERS ───────────────────────────────────────────
+// ── Admin: Racers ────────────────────────────────────────────
 window.addRacer = async function() {
   const num  = document.getElementById('reg-num').value.trim();
   const name = document.getElementById('reg-name').value.trim();
   const cls  = document.getElementById('reg-class').value;
-  if (!num || !name) { alert('Įveskite numerį ir komandos pavadinimą!'); return; }
-  if (state.racers[num] && !confirm(`Nr. ${num} jau registruotas (${state.racers[num].name}). Perrašyti?`)) return;
-  await dbSet(`racers/${num}`, { num, name: name.substring(0,30), class: cls });
-  document.getElementById('reg-num').value  = '';
-  document.getElementById('reg-name').value = '';
-  showToast(`✅ Registruotas: #${num} ${name}`);
+  if (!num||!name) { alert('Įveskite numerį ir komandos pavadinimą!'); return; }
+  if (S.racers[num]&&!confirm(`Nr. ${num} jau registruotas (${S.racers[num].name}). Perrašyti?`)) return;
+  await fbSet(`racers/${num}`, { num, name:name.substring(0,30), class:cls });
+  document.getElementById('reg-num').value='';
+  document.getElementById('reg-name').value='';
+  showToast(`✅ #${num} ${name} registruotas`);
 };
 
 window.removeRacer = function(num) {
-  showConfirm('Ištrinti dalyvį?', `#${num} ${state.racers[num]?.name}`, async () => {
-    await dbRemove(`racers/${num}`);
-    await dbRemove(`times/${num}_1`);
-    await dbRemove(`times/${num}_2`);
-    showToast(`🗑️ Dalyvis #${num} ištrintas`);
+  showConfirm('Ištrinti dalyvį?', `#${num} ${S.racers[num]?.name}`, async ()=>{
+    await fbDel(`racers/${num}`);
+    await fbDel(`times/${num}_1`);
+    await fbDel(`times/${num}_2`);
+    showToast(`🗑️ #${num} ištrintas`);
   });
 };
 
 window.editRacer = function(num) {
-  const r = state.racers[num];
-  if (!r) return;
-  editData = { type:'racer', num };
-  document.getElementById('modal-edit-content').innerHTML = `
+  const r = S.racers[num]; if(!r) return;
+  editData = {type:'racer', num};
+  document.getElementById('modal-edit-content').innerHTML=`
     <div class="form-group"><label>Komanda</label><input type="text" id="edit-name" value="${r.name}" maxlength="30"></div>
     <div class="form-group"><label>Klasė</label><select id="edit-class">
       <option value="SOFT" ${r.class==='SOFT'?'selected':''}>Soft Enduro</option>
@@ -673,13 +739,13 @@ window.editRacer = function(num) {
 
 function renderRacerList() {
   const list   = document.getElementById('racer-list');
-  const racers = Object.values(state.racers).sort((a,b)=>+a.num-+b.num);
+  const racers = Object.values(S.racers).sort((a,b)=>+a.num-+b.num);
   document.getElementById('racer-count').textContent = racers.length;
   if (!racers.length) {
-    list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:32px 0;">Nėra registruotų dalyvių</div>';
+    list.innerHTML='<div style="text-align:center;color:var(--muted);padding:28px 0;">Nėra registruotų dalyvių</div>';
     return;
   }
-  list.innerHTML = racers.map(r => `
+  list.innerHTML = racers.map(r=>`
     <div class="racer-item">
       <div class="racer-num">${r.num}</div>
       <div class="racer-info">
@@ -691,139 +757,219 @@ function renderRacerList() {
     </div>`).join('');
 }
 
-// ─── ADMIN – RESULTS ──────────────────────────────────────────
+// ── Admin: Results ───────────────────────────────────────────
+window.adminTab = function(name, el) {
+  document.querySelectorAll('#screen-admin > .content > .tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['setup','racers','results'].forEach(n=>{
+    document.getElementById(`admin-tab-${n}`).style.display = n===name?'':'none';
+  });
+  if (name==='setup')   renderSetup();
+  if (name==='racers')  renderRacerList();
+  if (name==='results') renderResults(activeResClass);
+};
+
 window.resultsTab = function(cls, el) {
   document.querySelectorAll('#admin-tab-results .tabs .tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  activeResClass = cls;
+  activeResClass=cls;
   renderResults(cls);
 };
 
+function buildRacerData(cls) {
+  const maxCP1=S.config.cp1||10, maxCP2=S.config.cp2||10;
+  const now = Date.now()/1000;
+  return Object.keys(S.racers)
+    .filter(n=>S.racers[n].class===cls)
+    .map(num=>{
+      const r  = S.racers[num];
+      const t1 = S.times[`${num}_1`]||{};
+      const t2 = S.times[`${num}_2`]||{};
+      const hasS1=t1.start!=null, hasF1=t1.finish!=null, hasC1=t1.cp!=null;
+      const hasS2=t2.start!=null, hasF2=t2.finish!=null, hasC2=t2.cp!=null;
+      const complete = hasS1&&hasF1&&hasC1&&hasS2&&hasF2&&hasC2;
+
+      // Time for GR1 — if running, use current elapsed
+      let time1=null;
+      if (hasS1&&hasF1) time1=Math.max(0,Math.round(t1.finish-t1.start));
+      else if (hasS1)   time1=Math.floor(now-t1.start);
+
+      let time2=null;
+      if (hasS2&&hasF2) time2=Math.max(0,Math.round(t2.finish-t2.start));
+      else if (hasS2)   time2=Math.floor(now-t2.start);
+
+      const finishedTime1 = hasS1&&hasF1 ? time1 : null;
+      const finishedTime2 = hasS2&&hasF2 ? time2 : null;
+      const totalTime = (finishedTime1!=null&&finishedTime2!=null) ? finishedTime1+finishedTime2 : null;
+
+      const cp1=(t1.cp??null), cp2=(t2.cp??null);
+      const totalCP=(cp1??0)+(cp2??0);
+      const missing=[];
+      if (!hasS1) missing.push('GR1 Startas');
+      if (!hasF1) missing.push('GR1 Finišas');
+      if (!hasC1) missing.push('GR1 CP');
+      if (!hasS2) missing.push('GR2 Startas');
+      if (!hasF2) missing.push('GR2 Finišas');
+      if (!hasC2) missing.push('GR2 CP');
+
+      return { num,r,t1,t2,time1,time2,finishedTime1,finishedTime2,totalTime,cp1,cp2,totalCP,complete,missing,
+               hasS1,hasF1,hasC1,hasS2,hasF2,hasC2 };
+    });
+}
+
 function renderResults(cls) {
-  const content  = document.getElementById('results-content');
+  const content = document.getElementById('results-content');
   if (!content) return;
-  const maxCP1   = state.config.cp1 || 10;
-  const maxCP2   = state.config.cp2 || 10;
-  const maxTotal = maxCP1 + maxCP2;
+  const maxCP1=S.config.cp1||10, maxCP2=S.config.cp2||10, maxTotal=maxCP1+maxCP2;
+  const now = Date.now()/1000;
 
-  const allNums = Object.keys(state.racers).filter(n => state.racers[n].class === cls);
-
-  const racerData = allNums.map(num => {
-    const t1 = state.times[`${num}_1`] || {};
-    const t2 = state.times[`${num}_2`] || {};
-    const complete = t1.start!=null && t1.finish!=null && t1.cp!=null
-                  && t2.start!=null && t2.finish!=null && t2.cp!=null;
-    const time1 = (t1.start!=null && t1.finish!=null) ? Math.max(0,Math.round(t1.finish-t1.start)) : null;
-    const time2 = (t2.start!=null && t2.finish!=null) ? Math.max(0,Math.round(t2.finish-t2.start)) : null;
-    const totalTime = (time1!=null&&time2!=null) ? time1+time2 : null;
-    const cp1   = t1.cp ?? null;
-    const cp2   = t2.cp ?? null;
-    const totalCP = (cp1??0)+(cp2??0);
-    return { num, r:state.racers[num], time1, time2, totalTime, cp1, cp2, totalCP, complete, t1, t2 };
+  const data = buildRacerData(cls);
+  const finished = data.filter(d=>d.complete).sort((a,b)=>{
+    if (b.totalCP!==a.totalCP) return b.totalCP-a.totalCP;
+    return a.totalTime-b.totalTime;
   });
+  const inProgress = data.filter(d=>!d.complete&&(d.hasS1||d.hasS2)).sort((a,b)=>+a.num-+b.num);
+  const notStarted = data.filter(d=>!d.complete&&!d.hasS1&&!d.hasS2).sort((a,b)=>+a.num-+b.num);
 
-  const finished = racerData.filter(d=>d.complete).sort((a,b)=>{
-    if (b.totalCP !== a.totalCP) return b.totalCP - a.totalCP;
-    return a.totalTime - b.totalTime;
-  });
-  const dnf = racerData.filter(d=>!d.complete).sort((a,b)=>+a.num-+b.num);
-
-  let h = '';
-  if (!finished.length && !dnf.length) {
-    content.innerHTML = '<div style="text-align:center;color:var(--muted);padding:32px 0;">Nėra duomenų</div>';
+  if (!data.length) {
+    content.innerHTML='<div style="text-align:center;color:var(--muted);padding:28px 0;">Nėra registruotų dalyvių</div>';
     return;
   }
 
+  let h='';
+
+  // Classified
   if (finished.length) {
-    h += `<div class="section-title" style="color:var(--green)">✅ Klasifikuoti (${finished.length})</div>
+    h+=`<div class="section-title" style="color:var(--green)">✅ Klasifikuoti (${finished.length})</div>
     <div style="overflow-x:auto"><table class="results-table"><thead><tr>
       <th>#</th><th>Nr.</th><th>Komanda</th>
-      <th>GR1 s</th><th>GR1 CP</th>
-      <th>GR2 s</th><th>GR2 CP</th>
+      <th>GR1</th><th>GR1 CP</th>
+      <th>GR2</th><th>GR2 CP</th>
       <th>Viso</th><th>CP</th><th></th>
     </tr></thead><tbody>`;
     finished.forEach((d,i)=>{
-      const p = i+1;
-      const pc = p===1?'place-1':p===2?'place-2':p===3?'place-3':'';
-      h += `<tr>
+      const p=i+1;
+      const pc=p===1?'place-1':p===2?'place-2':p===3?'place-3':'';
+      h+=`<tr>
         <td><span class="place-num ${pc}">${p}</span></td>
-        <td style="font-family:'Barlow Condensed';font-size:18px;font-weight:800;color:var(--accent)">${d.num}</td>
-        <td style="font-weight:600">${d.r.name}</td>
-        <td>${formatTime(d.time1)}</td>
+        <td style="font-family:'Barlow Condensed';font-size:18px;font-weight:900;color:var(--accent)">${d.num}</td>
+        <td style="font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.r.name}</td>
+        <td>${formatTime(d.finishedTime1)}</td>
         <td><span class="badge ${d.cp1>=maxCP1?'badge-green':'badge-red'}">${d.cp1}/${maxCP1}</span></td>
-        <td>${formatTime(d.time2)}</td>
+        <td>${formatTime(d.finishedTime2)}</td>
         <td><span class="badge ${d.cp2>=maxCP2?'badge-green':'badge-red'}">${d.cp2}/${maxCP2}</span></td>
         <td style="font-weight:700;color:var(--accent2)">${formatTime(d.totalTime)}</td>
         <td><span class="badge ${d.totalCP>=maxTotal?'badge-green':'badge-orange'}">${d.totalCP}/${maxTotal}</span></td>
         <td><button class="btn btn-ghost btn-sm" onclick="openEditResult('${d.num}')">✏️</button></td>
       </tr>`;
     });
-    h += '</tbody></table></div>';
+    h+='</tbody></table></div>';
   }
 
-  if (dnf.length) {
-    h += `<div class="section-title" style="color:var(--red);margin-top:20px">⛔ DNF (${dnf.length})</div>
+  // In progress (started but not complete)
+  if (inProgress.length) {
+    h+=`<div class="section-title" style="color:var(--yellow);margin-top:16px">⏳ Vyksta / trūksta duomenų (${inProgress.length})</div>
     <div style="overflow-x:auto"><table class="results-table"><thead><tr>
-      <th>Nr.</th><th>Komanda</th><th>GR1 duomenys</th><th>GR2 duomenys</th><th></th>
+      <th>Nr.</th><th>Komanda</th><th>GR1</th><th>GR2</th><th>Trūksta</th><th></th>
     </tr></thead><tbody>`;
-    dnf.forEach(d=>{
-      const s1=`S:${d.t1.start?'✓':'✗'} F:${d.t1.finish?'✓':'✗'} CP:${d.t1.cp!=null?'✓':'✗'}`;
-      const s2=`S:${d.t2.start?'✓':'✗'} F:${d.t2.finish?'✓':'✗'} CP:${d.t2.cp!=null?'✓':'✗'}`;
-      h += `<tr class="dnf">
-        <td style="font-family:'Barlow Condensed';font-size:18px;font-weight:800;color:var(--muted)">${d.num}</td>
-        <td>${d.r.name}</td>
-        <td style="font-size:11px;color:var(--muted)">${s1}</td>
-        <td style="font-size:11px;color:var(--muted)">${s2}</td>
+    inProgress.forEach(d=>{
+      const t1live = d.hasS1&&!d.hasF1 ? `<span class="live-time">⏱ ${formatTime(Math.floor(now-d.t1.start))}</span>` : (d.finishedTime1!=null?formatTime(d.finishedTime1):'—');
+      const t2live = d.hasS2&&!d.hasF2 ? `<span class="live-time">⏱ ${formatTime(Math.floor(now-d.t2.start))}</span>` : (d.finishedTime2!=null?formatTime(d.finishedTime2):'—');
+      const mis = d.missing.map(m=>`<span class="badge badge-red" style="font-size:9px">${m}</span>`).join(' ');
+      h+=`<tr>
+        <td style="font-family:'Barlow Condensed';font-size:18px;font-weight:900;color:var(--accent)">${d.num}</td>
+        <td style="font-weight:600">${d.r.name}</td>
+        <td>${t1live}</td><td>${t2live}</td>
+        <td>${mis}</td>
         <td><button class="btn btn-ghost btn-sm" onclick="openEditResult('${d.num}')">✏️</button></td>
       </tr>`;
     });
-    h += '</tbody></table></div>';
+    h+='</tbody></table></div>';
   }
-  content.innerHTML = h;
+
+  // Not started
+  if (notStarted.length) {
+    h+=`<div class="section-title" style="color:var(--muted);margin-top:16px">⛔ Nepradėjo (${notStarted.length})</div>
+    <div style="overflow-x:auto"><table class="results-table"><thead><tr>
+      <th>Nr.</th><th>Komanda</th><th>Klasė</th><th></th>
+    </tr></thead><tbody>`;
+    notStarted.forEach(d=>{
+      h+=`<tr class="dnf-row">
+        <td style="font-family:'Barlow Condensed';font-size:18px;font-weight:900;color:var(--muted)">${d.num}</td>
+        <td>${d.r.name}</td>
+        <td><span class="racer-class ${d.r.class==='SOFT'?'class-soft':'class-hard'}">${d.r.class}</span></td>
+        <td><button class="btn btn-ghost btn-sm" onclick="openEditResult('${d.num}')">✏️</button></td>
+      </tr>`;
+    });
+    h+='</tbody></table></div>';
+  }
+
+  content.innerHTML=h;
 }
 
+// ── Edit result ───────────────────────────────────────────────
 window.openEditResult = function(num) {
-  const t1 = state.times[`${num}_1`] || {};
-  const t2 = state.times[`${num}_2`] || {};
-  const r  = state.racers[num];
-  editData = { type:'result_full', num };
-  document.getElementById('modal-edit-content').innerHTML = `
-    <div style="margin-bottom:12px;font-weight:600;font-size:16px;">#${num} — ${r?.name||'?'}</div>
+  const t1=S.times[`${num}_1`]||{}, t2=S.times[`${num}_2`]||{};
+  const r=S.racers[num];
+  editData={type:'result_full', num};
+
+  const toVilnius = ts => {
+    if (!ts) return '';
+    return new Date(ts*1000).toLocaleTimeString('lt-LT',{timeZone:'Europe/Vilnius',hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  };
+
+  document.getElementById('modal-edit-content').innerHTML=`
+    <div style="margin-bottom:12px;font-weight:600;font-size:15px;">#${num} — ${r?.name||'?'}</div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:12px;">Laiko formatas: HH:MM:SS (Vilniaus laikas). Palikite tuščią — nepakeis.</p>
     <div class="section-title">GR1</div>
     <div class="flex-row">
-      <div class="form-group"><label>Startas (Unix s)</label><input type="number" id="e-s1" value="${t1.start||''}"></div>
-      <div class="form-group"><label>Finišas (Unix s)</label><input type="number" id="e-f1" value="${t1.finish||''}"></div>
+      <div class="form-group"><label>Startas</label><input type="text" id="e-s1" placeholder="HH:MM:SS" value="${toVilnius(t1.start)}" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}"></div>
+      <div class="form-group"><label>Finišas</label><input type="text" id="e-f1" placeholder="HH:MM:SS" value="${toVilnius(t1.finish)}" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}"></div>
     </div>
-    <div class="form-group"><label>GR1 CP</label><input type="number" id="e-c1" value="${t1.cp!=null?t1.cp:''}"></div>
-    <div class="section-title" style="margin-top:12px">GR2</div>
+    <div class="form-group"><label>GR1 CP</label><input type="number" id="e-c1" placeholder="CP kiekis" value="${t1.cp!=null?t1.cp:''}" inputmode="numeric"></div>
+    <div class="section-title" style="margin-top:10px">GR2</div>
     <div class="flex-row">
-      <div class="form-group"><label>Startas (Unix s)</label><input type="number" id="e-s2" value="${t2.start||''}"></div>
-      <div class="form-group"><label>Finišas (Unix s)</label><input type="number" id="e-f2" value="${t2.finish||''}"></div>
+      <div class="form-group"><label>Startas</label><input type="text" id="e-s2" placeholder="HH:MM:SS" value="${toVilnius(t2.start)}" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}"></div>
+      <div class="form-group"><label>Finišas</label><input type="text" id="e-f2" placeholder="HH:MM:SS" value="${toVilnius(t2.finish)}" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}"></div>
     </div>
-    <div class="form-group"><label>GR2 CP</label><input type="number" id="e-c2" value="${t2.cp!=null?t2.cp:''}"></div>
-    <p style="font-size:11px;color:var(--muted);margin-top:8px">Palikite tuščią, kad nepakeistumėte lauko.</p>`;
+    <div class="form-group"><label>GR2 CP</label><input type="number" id="e-c2" placeholder="CP kiekis" value="${t2.cp!=null?t2.cp:''}" inputmode="numeric"></div>`;
   document.getElementById('modal-edit').classList.add('open');
 };
 
+function hhmmssToTimestamp(str) {
+  // Parse HH:MM:SS in Vilnius timezone → Unix seconds
+  if (!str||!str.match(/^\d{2}:\d{2}:\d{2}$/)) return null;
+  const [hh,mm,ss] = str.split(':').map(Number);
+  // Use today's date in Vilnius timezone
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('lt-LT',{timeZone:'Europe/Vilnius'});
+  const [y,m,d] = dateStr.split('-').map(Number);
+  // Build date as Vilnius local time
+  const vilniusDate = new Date(`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}T${str}+03:00`);
+  // Try +03:00 (EEST summer) first, also try +02:00 (EET winter)
+  if (isNaN(vilniusDate.getTime())) return null;
+  return vilniusDate.getTime()/1000;
+}
+
 window.saveEdit = async function() {
-  if (editData.type === 'racer') {
-    const name = document.getElementById('edit-name').value.trim();
-    const cls  = document.getElementById('edit-class').value;
+  if (editData.type==='racer') {
+    const name=document.getElementById('edit-name').value.trim();
+    const cls=document.getElementById('edit-class').value;
     if (!name) return;
-    await dbUpdate(`racers/${editData.num}`, { name: name.substring(0,30), class: cls });
+    await fbUpd(`racers/${editData.num}`,{name:name.substring(0,30),class:cls});
     showToast('✅ Dalyvis atnaujintas');
-  } else if (editData.type === 'result_full') {
-    const num = editData.num;
+  } else if (editData.type==='result_full') {
+    const num=editData.num;
     for (const g of ['1','2']) {
-      const key = `${num}_${g}`;
-      const upd = {};
-      const s = document.getElementById(`e-s${g}`).value.trim();
-      const f = document.getElementById(`e-f${g}`).value.trim();
-      const c = document.getElementById(`e-c${g}`).value.trim();
-      if (s!=='') upd.start  = parseFloat(s);
-      if (f!=='') upd.finish = parseFloat(f);
-      if (c!=='') upd.cp     = parseInt(c);
-      if (Object.keys(upd).length) await dbUpdate(`times/${key}`, upd);
+      const key=`${num}_${g}`;
+      const upd={};
+      const sv=document.getElementById(`e-s${g}`).value.trim();
+      const fv=document.getElementById(`e-f${g}`).value.trim();
+      const cv=document.getElementById(`e-c${g}`).value.trim();
+      if (sv) { const ts=hhmmssToTimestamp(sv); if (ts) upd.start=ts; else { showToast('⚠️ Neteisingas laikas: '+sv,'warn'); return; } }
+      if (fv) { const ts=hhmmssToTimestamp(fv); if (ts) upd.finish=ts; else { showToast('⚠️ Neteisingas laikas: '+fv,'warn'); return; } }
+      if (cv!=='') upd.cp=parseInt(cv);
+      if (Object.keys(upd).length) await fbUpd(`times/${key}`,upd);
     }
     showToast('✅ Rezultatas atnaujintas');
     renderResults(activeResClass);
@@ -831,98 +977,181 @@ window.saveEdit = async function() {
   closeModal('modal-edit');
 };
 
-// ─── ADMIN TABS ───────────────────────────────────────────────
-window.adminTab = function(name, el) {
-  document.querySelectorAll('#screen-admin .tabs:first-of-type .tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('admin-tab-setup').style.display   = name==='setup'   ? '' : 'none';
-  document.getElementById('admin-tab-racers').style.display  = name==='racers'  ? '' : 'none';
-  document.getElementById('admin-tab-results').style.display = name==='results' ? '' : 'none';
-  if (name==='setup')   renderSetup();
-  if (name==='racers')  renderRacerList();
-  if (name==='results') renderResults(activeResClass);
+// ── Excel export ──────────────────────────────────────────────
+window.exportExcel = async function() {
+  showToast('📊 Ruošiamas Excel failas...');
+  try {
+    // Load SheetJS
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+    const XLSX = window.XLSX;
+    const wb = XLSX.utils.book_new();
+    const maxCP1=S.config.cp1||10, maxCP2=S.config.cp2||10;
+
+    for (const cls of ['SOFT','HARD']) {
+      const data = buildRacerData(cls);
+      const finished = data.filter(d=>d.complete).sort((a,b)=>{
+        if (b.totalCP!==a.totalCP) return b.totalCP-a.totalCP;
+        return a.totalTime-b.totalTime;
+      });
+      const dnf = data.filter(d=>!d.complete).sort((a,b)=>+a.num-+b.num);
+
+      // Sheet data rows
+      const rows = [];
+      // Config row
+      rows.push([`Max CP GR1: ${maxCP1}`, '', `Max CP GR2: ${maxCP2}`, '', `Lenktynės: ${S.config.raceName}`]);
+      rows.push([]);
+      // Header
+      rows.push([
+        'Vieta','Nr.','Komanda','Klasė',
+        'GR1 Startas','GR1 Finišas','GR1 Laikas (h:mm:ss)','GR1 Laikas (s)','GR1 CP',
+        'GR2 Startas','GR2 Finišas','GR2 Laikas (h:mm:ss)','GR2 Laikas (s)','GR2 CP',
+        'Bendras laikas (h:mm:ss)','Bendras laikas (s)','CP viso','Statusas'
+      ]);
+
+      const dataStartRow = 4; // 1-indexed, rows 1-2 = config, row 3 = blank header separator, row 4+ = data... actually row 3 is header
+      // Let's track actual excel row
+      let excelRow = 4; // after 2 config rows + 1 empty + 1 header
+
+      const toTimeStr = ts => {
+        if (!ts) return '';
+        return new Date(ts*1000).toLocaleTimeString('lt-LT',{timeZone:'Europe/Vilnius',hour12:false});
+      };
+
+      finished.forEach((d,i) => {
+        const place = i+1;
+        // Columns: A=place B=num C=name D=class E=gr1start F=gr1finish G=gr1time_fmt H=gr1time_s I=gr1cp
+        //          J=gr2start K=gr2finish L=gr2time_fmt M=gr2time_s N=gr2cp
+        //          O=total_fmt P=total_s Q=cp_total R=status
+        const r = excelRow;
+        const gr1TimeSec = d.finishedTime1;
+        const gr2TimeSec = d.finishedTime2;
+        const totalSec   = d.totalTime;
+
+        rows.push([
+          place,
+          +d.num,
+          d.r.name,
+          d.r.class,
+          toTimeStr(d.t1.start),    // E - GR1 start
+          toTimeStr(d.t1.finish),   // F - GR1 finish
+          { f: `=IF(AND(E${r}<>"",F${r}<>""),TEXT(F${r}-E${r},"[h]:mm:ss"),"")` }, // G
+          gr1TimeSec != null ? gr1TimeSec : '',  // H
+          d.cp1!=null?d.cp1:'',     // I
+          toTimeStr(d.t2.start),    // J
+          toTimeStr(d.t2.finish),   // K
+          { f: `=IF(AND(J${r}<>"",K${r}<>""),TEXT(K${r}-J${r},"[h]:mm:ss"),"")` }, // L
+          gr2TimeSec != null ? gr2TimeSec : '',  // M
+          d.cp2!=null?d.cp2:'',     // N
+          { f: `=IF(AND(H${r}<>"",M${r}<>""),TEXT((H${r}+M${r})/86400,"[h]:mm:ss"),"")` }, // O
+          totalSec != null ? totalSec : '',      // P
+          { f: `=IF(AND(I${r}<>"",N${r}<>""),I${r}+N${r},"")` }, // Q
+          'OK'  // R
+        ]);
+        excelRow++;
+      });
+
+      dnf.forEach(d => {
+        const r = excelRow;
+        rows.push([
+          'DNF',
+          +d.num,
+          d.r.name,
+          d.r.class,
+          toTimeStr(d.t1.start),
+          toTimeStr(d.t1.finish),
+          { f: `=IF(AND(E${r}<>"",F${r}<>""),TEXT(F${r}-E${r},"[h]:mm:ss"),"")` },
+          d.finishedTime1!=null?d.finishedTime1:'',
+          d.cp1!=null?d.cp1:'',
+          toTimeStr(d.t2.start),
+          toTimeStr(d.t2.finish),
+          { f: `=IF(AND(J${r}<>"",K${r}<>""),TEXT(K${r}-J${r},"[h]:mm:ss"),"")` },
+          d.finishedTime2!=null?d.finishedTime2:'',
+          d.cp2!=null?d.cp2:'',
+          '',
+          '',
+          { f: `=IF(AND(I${r}<>"",N${r}<>""),I${r}+N${r},"")` },
+          'DNF — trūksta: '+d.missing.join(', ')
+        ]);
+        excelRow++;
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+
+      // Column widths
+      ws['!cols'] = [
+        {wch:7},{wch:5},{wch:28},{wch:8},
+        {wch:10},{wch:10},{wch:14},{wch:10},{wch:6},
+        {wch:10},{wch:10},{wch:14},{wch:10},{wch:6},
+        {wch:14},{wch:10},{wch:7},{wch:30}
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, cls==='SOFT'?'Soft Enduro':'Hard Enduro');
+    }
+
+    const fname = `${S.config.raceName||'Enduro'}_rezultatai_${new Date().toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(wb, fname);
+    showToast('✅ Excel failas atsisiųstas!');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Klaida kuriant Excel failą', 'err');
+  }
 };
 
-// ─── UI HELPERS ───────────────────────────────────────────────
-function statsRow(started, running, finished) {
-  return `<div class="stats-row">
-    <div class="stat-box"><div class="stat-num" style="color:var(--accent2)">${started}</div><div class="stat-label">Startavo</div></div>
-    <div class="stat-box"><div class="stat-num" style="color:var(--yellow)">${running}</div><div class="stat-label">Bėga</div></div>
-    <div class="stat-box"><div class="stat-num" style="color:var(--green)">${finished}</div><div class="stat-label">Finišavo</div></div>
-  </div>`;
+function loadScript(src) {
+  return new Promise((res,rej) => {
+    if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
+    const s = document.createElement('script');
+    s.src=src; s.onload=res; s.onerror=rej;
+    document.head.appendChild(s);
+  });
 }
 
-function classCountsHtml(gr) {
-  const keys = Object.keys(state.times).filter(k=>k.endsWith(`_${gr}`));
-  const count = (cls, finished) => keys.filter(k=>{
-    const n=k.split('_')[0]; const r=state.racers[n];
-    if (r?.class!==cls) return false;
-    return finished ? state.times[k].finish!=null : state.times[k].start!=null;
-  }).length;
-  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
-    <div class="stat-box" style="border-color:rgba(0,170,255,.3)">
-      <div class="stat-label" style="color:var(--soft)">Soft Enduro</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px">Startavo: <b>${count('SOFT',false)}</b> · Finišavo: <b>${count('SOFT',true)}</b></div>
-    </div>
-    <div class="stat-box" style="border-color:rgba(255,85,0,.3)">
-      <div class="stat-label" style="color:var(--hard)">Hard Enduro</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px">Startavo: <b>${count('HARD',false)}</b> · Finišavo: <b>${count('HARD',true)}</b></div>
-    </div>
-  </div>`;
-}
-
-function runningRow(num, name, sec) {
-  return `<div class="running-row">
-    <div>
-      <div style="font-family:'Barlow Condensed';font-size:24px;font-weight:900;color:var(--accent)">#${num}</div>
-      <div style="font-size:12px;color:var(--muted)">${name}</div>
-    </div>
-    <div class="running-time">${formatTime(sec)}</div>
-  </div>`;
-}
-
+// ── UI helpers ────────────────────────────────────────────────
 function formatTime(s) {
-  if (s==null||isNaN(s)) return '--:--';
-  s = Math.abs(Math.round(s));
+  if (s==null||isNaN(s)) return '—';
+  s=Math.abs(Math.round(s));
   const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
-  return h>0 ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+  return h>0?`${h}:${pad(m)}:${pad(sec)}`:`${pad(m)}:${pad(sec)}`;
 }
 function pad(n){return String(n).padStart(2,'0');}
 
-window.closeModal = function(id) { document.getElementById(id).classList.remove('open'); };
+window.closeModal = function(id){document.getElementById(id).classList.remove('open');};
 
-let confirmCb = null;
-function showConfirm(title, body, cb) {
-  document.getElementById('confirm-title').textContent = title;
-  document.getElementById('confirm-body').textContent  = body;
-  confirmCb = cb;
+let confirmCb=null;
+function showConfirm(title,body,cb){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-body').textContent=body;
+  confirmCb=cb;
   document.getElementById('modal-confirm').classList.add('open');
 }
-document.getElementById('confirm-ok').onclick = () => {
-  closeModal('modal-confirm');
-  if (confirmCb) confirmCb();
-};
+document.getElementById('confirm-ok').onclick=()=>{closeModal('modal-confirm');if(confirmCb)confirmCb();};
 
-let toastTm;
-function showToast(msg) {
-  let t = document.getElementById('_toast');
-  if (!t) {
-    t = document.createElement('div'); t.id='_toast';
-    t.style.cssText=`position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
-      background:var(--surface);border:1px solid var(--accent);color:var(--text);
+let toastTm, toastEl;
+function showToast(msg, type='ok') {
+  if (!toastEl) {
+    toastEl=document.createElement('div');
+    toastEl.style.cssText=`position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+      background:var(--surface);border:1px solid var(--green);color:var(--text);
       padding:12px 20px;border-radius:8px;font-size:14px;z-index:999;
-      font-family:'Barlow',sans-serif;box-shadow:0 4px 20px rgba(0,0,0,.6);
-      transition:opacity .3s;max-width:90vw;text-align:center;`;
-    document.body.appendChild(t);
+      font-family:'Barlow',sans-serif;box-shadow:0 4px 20px rgba(0,0,0,.7);
+      transition:opacity .3s;max-width:92vw;text-align:center;pointer-events:none;`;
+    document.body.appendChild(toastEl);
   }
-  t.textContent=msg; t.style.opacity='1';
+  toastEl.textContent=msg;
+  toastEl.style.borderColor = type==='err'?'var(--red)':type==='warn'?'var(--yellow)':'var(--green)';
+  toastEl.style.opacity='1';
   clearTimeout(toastTm);
-  toastTm = setTimeout(()=>{ t.style.opacity='0'; }, 3500);
+  toastTm=setTimeout(()=>{toastEl.style.opacity='0';},3500);
 }
 
 document.querySelectorAll('.modal-overlay').forEach(o=>{
-  o.addEventListener('click', e=>{ if(e.target===o) o.classList.remove('open'); });
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
 });
+
+// Auto-refresh results table (for live times)
+setInterval(()=>{
+  if (document.getElementById('admin-tab-results').style.display!=='none') renderResults(activeResClass);
+}, 5000);
 </script>
 </body>
 </html>
