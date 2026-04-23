@@ -388,6 +388,18 @@ let editData = {}, activeResClass = 'SOFT';
 let marshalInputBuilt = false, marshalRefreshTimer = null;
 let connected = false, btnLocked = false;
 
+// ── Helpers: normalize racer number ──────────────────────────
+// Accepts '5', '05', '  5 ', 5 — returns canonical string '5'.
+// Returns null if not a valid positive integer in range 1..999.
+function normalizeNum(input) {
+  if (input==null) return null;
+  const s = String(input).trim();
+  if (!/^\d+$/.test(s)) return null;
+  const n = parseInt(s, 10);
+  if (!Number.isFinite(n) || n < 1 || n > 999) return null;
+  return String(n);
+}
+
 // ── Firebase helpers (compat API) ─────────────────────────────
 function fbRef(path){ return db.ref(R + '/' + path); }
 function fbSet(path,v){ return db.ref(R + '/' + path).set(v); }
@@ -757,8 +769,10 @@ function lockBtn(ms=1500) {
 // ── Marshal actions ───────────────────────────────────────────
 window.regStart = async function(gr) {
   const inp = document.getElementById('m-num');
-  const num = (inp?.value||'').trim();
-  if (!num) { showToast('⚠️ Įveskite dalyvio numerį!', 'warn'); return; }
+  const raw = (inp?.value||'').trim();
+  if (!raw) { showToast('⚠️ Įveskite dalyvio numerį!', 'warn'); return; }
+  const num = normalizeNum(raw);
+  if (!num) { showToast(`⚠️ Netinkamas numeris: "${raw}" (1–999)`, 'warn'); inp.value=''; inp.focus(); return; }
   if (!S.racers[num]) { showToast(`❌ Dalyvis #${num} neregistruotas!`, 'err'); inp.value=''; inp.focus(); return; }
   const key = `${num}_${gr}`;
   if (S.times[key]?.start!=null) { showToast(`⚠️ #${num} jau turi startą GR${gr}!`, 'warn'); inp.value=''; inp.focus(); return; }
@@ -770,8 +784,10 @@ window.regStart = async function(gr) {
 
 window.regFinish = async function(gr) {
   const inp = document.getElementById('m-num');
-  const num = (inp?.value||'').trim();
-  if (!num) { showToast('⚠️ Įveskite dalyvio numerį!', 'warn'); return; }
+  const raw = (inp?.value||'').trim();
+  if (!raw) { showToast('⚠️ Įveskite dalyvio numerį!', 'warn'); return; }
+  const num = normalizeNum(raw);
+  if (!num) { showToast(`⚠️ Netinkamas numeris: "${raw}" (1–999)`, 'warn'); inp.value=''; inp.focus(); return; }
   if (!S.racers[num]) { showToast(`❌ Dalyvis #${num} neregistruotas!`, 'err'); inp.value=''; inp.focus(); return; }
   const key = `${num}_${gr}`;
   if (!S.times[key]?.start) { showToast(`⚠️ #${num} neturi starto GR${gr}!`, 'warn'); inp.value=''; inp.focus(); return; }
@@ -787,9 +803,11 @@ window.regFinish = async function(gr) {
 window.regCP = async function(gr, maxCP) {
   const numInp = document.getElementById('cp-num');
   const cpInp  = document.getElementById('cp-val');
-  const num    = (numInp?.value||'').trim();
+  const raw    = (numInp?.value||'').trim();
   const cpVal  = cpInp?.value;
-  if (!num) { showToast('⚠️ Įveskite dalyvio numerį!', 'warn'); return; }
+  if (!raw) { showToast('⚠️ Įveskite dalyvio numerį!', 'warn'); return; }
+  const num = normalizeNum(raw);
+  if (!num) { showToast(`⚠️ Netinkamas numeris: "${raw}" (1–999)`, 'warn'); numInp.value=''; numInp.focus(); return; }
   if (!S.racers[num]) { showToast(`❌ Dalyvis #${num} neregistruotas!`, 'err'); numInp.value=''; numInp.focus(); return; }
   if (cpVal==='') { showToast('⚠️ Įveskite CP kiekį!', 'warn'); return; }
   const cp = parseInt(cpVal);
@@ -803,8 +821,10 @@ window.regCP = async function(gr, maxCP) {
 // ── Marshal 7: Return to base ─────────────────────────────────
 window.regReturn = async function() {
   const inp = document.getElementById('m-num');
-  const num = (inp?.value||'').trim();
-  if (!num) { showToast('⚠️ Įveskite dalyvio numerį!', 'warn'); return; }
+  const raw = (inp?.value||'').trim();
+  if (!raw) { showToast('⚠️ Įveskite dalyvio numerį!', 'warn'); return; }
+  const num = normalizeNum(raw);
+  if (!num) { showToast(`⚠️ Netinkamas numeris: "${raw}" (1–999)`, 'warn'); inp.value=''; inp.focus(); return; }
   if (!S.racers[num]) { showToast(`❌ Dalyvis #${num} neregistruotas!`, 'err'); inp.value=''; inp.focus(); return; }
   if (S.returned[num]) { showToast(`⚠️ #${num} jau užfiksuotas kaip grįžęs!`, 'warn'); inp.value=''; inp.focus(); return; }
 
@@ -893,7 +913,7 @@ window.saveConfig = async function() {
   const name = document.getElementById('cfg-race-name').value.trim();
   const cp1  = parseInt(document.getElementById('cfg-cp1').value)||10;
   const cp2  = parseInt(document.getElementById('cfg-cp2').value)||10;
-  if (!name) { alert('Įveskite lenktynių pavadinimą!'); return; }
+  if (!name) { showToast('⚠️ Įveskite lenktynių pavadinimą!', 'warn'); return; }
   await fbSet('config', { raceName:name, cp1, cp2 });
   showToast('✅ Nustatymai išsaugoti');
 };
@@ -924,16 +944,31 @@ window.doReset = async function() {
 };
 
 // ── Admin: Racers ────────────────────────────────────────────
-window.addRacer = async function() {
-  const num  = document.getElementById('reg-num').value.trim();
-  const name = document.getElementById('reg-name').value.trim();
-  const cls  = document.getElementById('reg-class').value;
-  if (!num||!name) { alert('Įveskite numerį ir komandos pavadinimą!'); return; }
-  if (S.racers[num]&&!confirm(`Nr. ${num} jau registruotas (${S.racers[num].name}). Perrašyti?`)) return;
+async function _saveRacer(num, name, cls) {
   await fbSet(`racers/${num}`, { num, name:name.substring(0,30), class:cls });
   document.getElementById('reg-num').value='';
   document.getElementById('reg-name').value='';
+  document.getElementById('reg-num').focus();
   showToast(`✅ #${num} ${name} registruotas`);
+}
+
+window.addRacer = function() {
+  const rawNum = document.getElementById('reg-num').value.trim();
+  const name   = document.getElementById('reg-name').value.trim();
+  const cls    = document.getElementById('reg-class').value;
+  if (!rawNum) { showToast('⚠️ Įveskite dalyvio numerį!', 'warn'); return; }
+  if (!name)   { showToast('⚠️ Įveskite komandos pavadinimą!', 'warn'); return; }
+  const num = normalizeNum(rawNum);
+  if (!num) { showToast(`⚠️ Netinkamas numeris: "${rawNum}" (1–999)`, 'warn'); return; }
+  if (S.racers[num]) {
+    showConfirm(
+      `Nr. ${num} jau užimtas`,
+      `Esamas dalyvis: ${S.racers[num].name}. Perrašyti?`,
+      () => { _saveRacer(num, name, cls); }
+    );
+    return;
+  }
+  _saveRacer(num, name, cls);
 };
 
 window.removeRacer = function(num) {
